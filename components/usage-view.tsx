@@ -18,7 +18,7 @@ export const UsageView = ({
     type === "electricity" ? "green" : type === "gas" ? "orange" : "blue";
 
   return (
-    <div className="md:max-w-[452px] max-w-[calc(100dvw-80px)] w-full pb-6 flex flex-col gap-4">
+    <div className="md:max-w-[752px] max-w-[calc(100dvw-80px)] w-full pb-6 flex flex-col gap-4">
       <motion.div
         className="flex flex-col"
         initial={{ opacity: 0 }}

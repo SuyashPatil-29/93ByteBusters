@@ -144,7 +144,7 @@ export default function Home() {
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="grid sm:grid-cols-2 gap-2 w-full px-4 md:px-0 mx-auto md:max-w-[800px] mb-4">
+        <div className="grid sm:grid-cols-2 gap-2 w-full px-4 md:px-0 mx-auto md:max-w-[900px] mb-4">
           {messages.length === 0 &&
             suggestedActions.map((action, index) => (
               <motion.div
@@ -197,7 +197,7 @@ export default function Home() {
         >
           <input
             ref={inputRef}
-            className="bg-zinc-100 rounded-md px-2 py-1.5 w-full outline-none dark:bg-zinc-700 text-zinc-800 dark:text-zinc-300 md:max-w-[800px] max-w-[calc(100dvw-32px)]"
+            className="bg-zinc-100 rounded-md px-2 py-1.5 w-full outline-none dark:bg-zinc-700 text-zinc-800 dark:text-zinc-300 md:max-w-[900px] max-w-[calc(100dvw-32px)]"
             placeholder="Send a message..."
             value={input}
             onChange={(event) => {

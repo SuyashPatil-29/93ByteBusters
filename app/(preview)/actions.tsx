@@ -14,6 +14,7 @@ import { StockList } from "@/components/stock-list";
 import StockDataDisplay from "@/components/indian-stock-view";
 import { marked } from "marked";
 import FirecrawlApp from "@mendable/firecrawl-js";
+import axios from "axios";
 
 export interface Hub {
   climate: Record<"low" | "high", number>;
@@ -76,7 +77,7 @@ const sendMessage = async (message: string) => {
             <Message
               role="assistant"
               content={
-                <div className="w-full max-w-6xl mx-auto p-4">
+                <div className="w-full max-w-7xl mx-auto p-4">
                   <h2 className="text-xl font-semibold mb-4">
                     Loading results for: {query}
                   </h2>
@@ -162,7 +163,7 @@ const sendMessage = async (message: string) => {
               <Message
                 role="assistant"
                 content={
-                  <div className="w-full max-w-6xl mx-auto p-4">
+                  <div className="w-full max-w-7xl mx-auto p-4">
                     <h2 className="text-xl font-semibold mb-4">
                       Searching for: {query}
                     </h2>
@@ -252,7 +253,7 @@ const sendMessage = async (message: string) => {
               <Message
                 role="assistant"
                 content={
-                  <div className="w-full max-w-6xl mx-auto p-4">
+                  <div className="w-full max-w-7xl mx-auto p-4">
                     <h2 className="text-xl font-semibold mb-4">
                       Results for: {query}
                     </h2>
@@ -437,7 +438,7 @@ const sendMessage = async (message: string) => {
                 <Message
                   role="assistant"
                   content={
-                    <div className="w-full max-w-6xl mx-auto p-4">
+                    <div className="w-full max-w-7xl mx-auto p-4">
                       <h2 className="text-xl font-semibold mb-4">
                         Results for: {query}
                       </h2>
@@ -558,7 +559,7 @@ const sendMessage = async (message: string) => {
                 <Message
                   role="assistant"
                   content={
-                    <div className="w-full max-w-6xl mx-auto p-4">
+                    <div className="w-full max-w-7xl mx-auto p-4">
                       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                         <p className="font-medium">
                           Would you like me to scrape detailed information from
@@ -630,7 +631,7 @@ const sendMessage = async (message: string) => {
               role="assistant"
               // Update max-width in listStocks
               content={
-                <div className="w-full max-w-6xl mx-auto p-4">
+                <div className="w-full max-w-7xl mx-auto p-4">
                   <StockList
                     gainers={data.top_gainers || []}
                     losers={data.top_losers || []}
@@ -661,7 +662,7 @@ const sendMessage = async (message: string) => {
               <Message
                 role="assistant"
                 content={
-                  <div className="w-full max-w-6xl mx-auto p-4">
+                  <div className="w-full max-w-7xl mx-auto p-4">
                     <p>Scraping detailed information from: {url}</p>
                     <div className="animate-pulse space-y-3 mt-2">
                       <div className="h-4 bg-gray-200 rounded w-full"></div>
@@ -855,7 +856,7 @@ const sendMessage = async (message: string) => {
               <Message
                 role="assistant"
                 content={
-                  <div className="w-full max-w-6xl mx-auto p-4">
+                  <div className="w-full max-w-7xl mx-auto p-4">
                     <p>Fetching NSE data for: {symbol}</p>
                     <div className="animate-pulse space-y-3 mt-2">
                       <div className="h-4 bg-gray-200 rounded w-full"></div>
@@ -1021,16 +1022,16 @@ const sendMessage = async (message: string) => {
         parameters: z.object({
           symbol: z
             .string()
-            .describe("Indian stock symbol (e.g., RELIANCE.BSE, TCS.BSE)"),
+            .describe("Indian stock symbol (e.g., RELIANCE.NS, TCS.NS)"),
         }),
         generate: async function* ({ symbol }) {
           const toolCallId = generateId();
-          
+
           yield (
             <Message
               role="assistant"
               content={
-                <div className="w-full max-w-6xl mx-auto p-4">
+                <div className="w-full max-w-7xl mx-auto p-4">
                   <h2 className="text-xl font-semibold mb-4">Indian Markets</h2>
                   <div className="border rounded-lg p-4">
                     <div className="animate-pulse space-y-4">
@@ -1041,13 +1042,7 @@ const sendMessage = async (message: string) => {
                           <div className="h-4 bg-gray-200 rounded"></div>
                           <div className="h-4 bg-gray-200 rounded"></div>
                         </div>
-                        <div className="flex-1 space-y-3">
-                          <div className="h-4 bg-gray-200 rounded"></div>
-                          <div className="h-4 bg-gray-200 rounded"></div>
-                          <div className="h-4 bg-gray-200 rounded"></div>
-                        </div>
                       </div>
-                      <div className="h-24 bg-gray-200 rounded"></div>
                     </div>
                   </div>
                 </div>
@@ -1055,48 +1050,85 @@ const sendMessage = async (message: string) => {
             />
           );
 
-          const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
-          const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&outputsize=compact&apikey=${apiKey}`;
-          const response = await fetch(url);
-          const data = await response.json();
+          try {
+            const options = {
+              method: "GET",
+              url: "https://apidojo-yahoo-finance-v1.p.rapidapi.com/stock/v3/get-chart",
+              params: {
+                interval: "1d",
+                symbol: symbol,
+                range: "3mo",
+                region: "IN",
+                includePrePost: "false",
+                useYfid: "true",
+                includeAdjustedClose: "true",
+                events: "capitalGain,div,split",
+              },
+              headers: {
+                "X-RapidAPI-Key": process.env.RAPID_API_KEY,
+                "X-RapidAPI-Host": "apidojo-yahoo-finance-v1.p.rapidapi.com",
+              },
+            };
 
-          messages.done([
-            ...(messages.get() as CoreMessage[]),
-            {
-              role: "assistant",
-              content: [
-                {
-                  type: "tool-call",
-                  toolCallId,
-                  toolName: "listIndianStocks",
-                  args: {},
-                },
-              ],
-            },
-            {
-              role: "tool",
-              content: [
-                {
-                  type: "tool-result",
-                  toolName: "listIndianStocks",
-                  toolCallId,
-                  result: data,
-                },
-              ],
-            },
-          ]);
+            const response = await axios.request(options);
+            const data = response.data;
 
-          return (
-            <Message
-              role="assistant"
-              content={
-                <div className="w-full max-w-6xl mx-auto p-4">
-                  <h2 className="text-xl font-semibold mb-4">Indian Markets</h2>
-                  <StockDataDisplay apiData={data} />
-                </div>
-              }
-            />
-          );
+            console.log("Data:", JSON.stringify(data));
+            console.log("Symbol:", symbol);
+
+            messages.done([
+              ...(messages.get() as CoreMessage[]),
+              {
+                role: "assistant",
+                content: [
+                  {
+                    type: "tool-call",
+                    toolCallId,
+                    toolName: "listIndianStocks",
+                    args: { symbol },
+                  },
+                ],
+              },
+              {
+                role: "tool",
+                content: [
+                  {
+                    type: "tool-result",
+                    toolName: "listIndianStocks",
+                    toolCallId,
+                    result: data,
+                  },
+                ],
+              },
+            ]);
+
+            return (
+              <Message
+                role="assistant"
+                content={
+                  <div className="w-full max-w-7xl mx-auto p-4">
+                    <h2 className="text-xl font-semibold mb-4">
+                      Indian Markets - {symbol}
+                    </h2>
+                    <StockDataDisplay apiData={data} />
+                  </div>
+                }
+              />
+            );
+          } catch (error) {
+            console.error("Error fetching stock data:", error);
+            return (
+              <Message
+                role="assistant"
+                content={
+                  <div className="text-red-500">
+                    Error fetching stock data. Please ensure you're using a
+                    valid symbol (e.g., RELIANCE.NS, TCS.NS)
+                  </div>
+                }
+              />
+            );
+          }
         },
       },
     },
