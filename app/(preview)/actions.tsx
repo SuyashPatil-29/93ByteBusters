@@ -15,6 +15,7 @@ import { UsageView } from "@/components/usage-view";
 import { getStockData, searchStocks, StockData } from "@/services/alpha-vantage";
 import { StockView } from "@/components/stock-view";
 import { StockList } from "@/components/stock-list";
+import StockDataDisplay from "@/components/indian-stock-view";
 
 export interface Hub {
   climate: Record<"low" | "high", number>;
@@ -130,9 +131,6 @@ const sendMessage = async (message: string) => {
           return <Message role="assistant" content={<CameraView />} />;
         },
       },
-      // Remove the AVAILABLE_STOCKS constant
-      
-      // Update the listStocks tool
       listStocks: {
         description: "list all available stocks and ETFs",
         parameters: z.object({}),
@@ -194,6 +192,7 @@ const sendMessage = async (message: string) => {
           const toolCallId = generateId();
 
           messages.done([
+
             ...(messages.get() as CoreMessage[]),
             {
               role: "assistant",
@@ -348,6 +347,57 @@ const sendMessage = async (message: string) => {
           ]);
       
           return <Message role="assistant" content={<StockView data={stockData} symbol={symbol} />} />;
+        },
+      },
+      listIndianStocks: {
+        description: "show Indian market stocks information",
+        parameters: z.object({
+          symbol: z.string().describe("Indian stock symbol (e.g., RELIANCE.BSE, TCS.BSE)")
+        }),
+        generate: async function* ({ symbol }) {
+          const toolCallId = generateId();
+          const apiKey = process.env.ALPHA_VANTAGE_API_KEY;        
+          const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&outputsize=compact&apikey=${apiKey}`;
+          const response = await fetch(url);
+          const data = await response.json();
+
+          messages.done([
+            ...(messages.get() as CoreMessage[]),
+            {
+              role: "assistant",
+              content: [
+                {
+                  type: "tool-call",
+                  toolCallId,
+                  toolName: "listIndianStocks",
+                  args: {},
+                },
+              ],
+            },
+            {
+              role: "tool",
+              content: [
+                {
+                  type: "tool-result",
+                  toolName: "listIndianStocks",
+                  toolCallId,
+                  result: data,
+                },
+              ],
+            },
+          ]);
+
+          return (
+            <Message
+              role="assistant"
+              content={
+                <div className="w-full max-w-4xl mx-auto p-4">
+                  <h2 className="text-xl font-semibold mb-4">Indian Markets</h2>
+                  <StockDataDisplay apiData={data} />
+                </div>
+              }
+            />
+          );
         },
       },
     },
