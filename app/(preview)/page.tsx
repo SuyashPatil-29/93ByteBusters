@@ -23,24 +23,24 @@ export default function Home() {
       action: "Why is Tesla down today?",
     },
     {
+      title: "Show",
+      label: "RELIANCE stock data",
+      action: "Show me a chart of Reliance stock data",
+    },
+    {
       title: "Show me",
-      label: "tech ETF performance",
+      label: "tech AXIS BANK ETF performance",
       action: "Show tech ETF performance",
     },
     {
-      title: "Get NSE",
+      title: "Get ETH",
       label: "equity data by symbol",
       action: "Get NSE equity data for symbol: ",
     },
     {
-      title: "List",
-      label: "all available stocks",
-      action: "List all available stocks",
-    },
-    {
-      title: "Show",
-      label: "Indian market stocks",
-      action: "Show Indian market stocks",
+      title: "Recommendations",
+      label: "of a similar stock",
+      action: "Get stock recommendations of similar stocks", // Default example with AAPL
     },
     {
       title: "Get",

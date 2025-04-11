@@ -9,12 +9,13 @@ import {
   streamUI,
 } from "ai/rsc";
 import { ReactNode } from "react";
-import { z } from "zod";
-import { StockList } from "@/components/stock-list";
+import { symbol, z } from "zod";
+
 import StockDataDisplay from "@/components/indian-stock-view";
 import { marked } from "marked";
 import FirecrawlApp from "@mendable/firecrawl-js";
 import axios from "axios";
+import StockList from "@/components/stock-list";
 
 export interface Hub {
   climate: Record<"low" | "high", number>;
@@ -1063,57 +1064,85 @@ const sendMessage = async (message: string) => {
         },
       },
       listStocks: {
-        description: "list all available stocks and ETFs",
-        parameters: z.object({}),
-        generate: async function* ({}) {
+        description: "Get stock recommendations for a given company.",
+        parameters: z.object({
+          tickerSymbol: z.string().describe("The company or stock name."),
+        }),
+        generate: async function* ({ tickerSymbol }) {
           const toolCallId = generateId();
-          const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
-          const url = `https://www.alphavantage.co/query?function=TOP_GAINERS_LOSERS&apikey=${apiKey}`;
 
-          const response = await fetch(url);
-          const data = await response.json();
+          // Append .NS for NSE stocks
+          const formattedSymbol = tickerSymbol.includes(".")
+            ? tickerSymbol
+            : `${tickerSymbol}.NS`;
 
-          messages.done([
-            ...(messages.get() as CoreMessage[]),
-            {
-              role: "assistant",
-              content: [
-                {
-                  type: "tool-call",
-                  toolCallId,
-                  toolName: "listStocks",
-                  args: {},
-                },
-              ],
+          const options = {
+            method: "GET",
+            url: "https://apidojo-yahoo-finance-v1.p.rapidapi.com/stock/v2/get-recommendations",
+            params: { symbol: formattedSymbol },
+            headers: {
+              "X-RapidAPI-Key": process.env.RAPID_API_KEY,
+              "X-RapidAPI-Host": "apidojo-yahoo-finance-v1.p.rapidapi.com",
             },
-            {
-              role: "tool",
-              content: [
-                {
-                  type: "tool-result",
-                  toolName: "listStocks",
-                  toolCallId,
-                  result: data,
-                },
-              ],
-            },
-          ]);
+          };
 
-          return (
-            <Message
-              role="assistant"
-              // Update max-width in listStocks
-              content={
-                <div className="w-full max-w-7xl mx-auto p-4">
-                  <StockList
-                    gainers={data.top_gainers || []}
-                    losers={data.top_losers || []}
-                    activelyTraded={data.most_actively_traded || []}
-                  />
-                </div>
-              }
-            />
-          );
+          try {
+            const response = await axios.request(options);
+            const data = response.data;
+
+            console.log("Data:", JSON.stringify(data));
+            console.log("Symbol:", symbol);
+
+            messages.done([
+              ...(messages.get() as CoreMessage[]),
+              {
+                role: "assistant",
+                content: [
+                  {
+                    type: "tool-call",
+                    toolCallId,
+                    toolName: "listStocks",
+                    args: {},
+                  },
+                ],
+              },
+              {
+                role: "tool",
+                content: [
+                  {
+                    type: "tool-result",
+                    toolName: "listStocks",
+                    toolCallId,
+                    result: data,
+                  },
+                ],
+              },
+            ]);
+
+            return (
+              <Message
+                role="assistant"
+                content={
+                  <div className="w-full max-w-7xl mx-auto p-4">
+                    <StockList data={data} />
+                  </div>
+                }
+              />
+            );
+          } catch (error) {
+            console.error("Error fetching stock recommendations:", error);
+            return (
+              <Message
+                role="assistant"
+                content={
+                  <div className="text-red-500">
+                    Failed to fetch stock recommendations. Please try again
+                    later.
+                  </div>
+                }
+              />
+            );
+          }
         },
       },
       scrapeStockInfo: {
