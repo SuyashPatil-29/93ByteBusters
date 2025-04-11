@@ -1,6 +1,7 @@
 import { Message, TextStreamMessage } from "@/components/message";
 import { openai } from "@ai-sdk/openai";
 import { CoreMessage, generateId } from "ai";
+import { getJson } from "serpapi";
 import {
   createAI,
   createStreamableValue,
@@ -12,10 +13,15 @@ import { z } from "zod";
 import { CameraView } from "@/components/camera-view";
 import { HubView } from "@/components/hub-view";
 import { UsageView } from "@/components/usage-view";
-import { getStockData, searchStocks, StockData } from "@/services/alpha-vantage";
+import {
+  getStockData,
+  searchStocks,
+  StockData,
+} from "@/services/alpha-vantage";
 import { StockView } from "@/components/stock-view";
 import { StockList } from "@/components/stock-list";
 import StockDataDisplay from "@/components/indian-stock-view";
+import { marked } from 'marked';
 
 export interface Hub {
   climate: Record<"low" | "high", number>;
@@ -23,19 +29,19 @@ export interface Hub {
   locks: Array<{ name: string; isLocked: boolean }>;
 }
 
-    // Add this near other imports
-    const AVAILABLE_STOCKS = [
-      { symbol: "VTI", name: "Vanguard Total Stock Market ETF" },
-      { symbol: "SPY", name: "SPDR S&P 500 ETF" },
-      { symbol: "QQQ", name: "Invesco QQQ Trust" },
-      { symbol: "AAPL", name: "Apple Inc." },
-      { symbol: "MSFT", name: "Microsoft Corporation" },
-      { symbol: "GOOGL", name: "Alphabet Inc." },
-      { symbol: "AMZN", name: "Amazon.com Inc." },
-      { symbol: "META", name: "Meta Platforms Inc." },
-      { symbol: "TSLA", name: "Tesla Inc." },
-      { symbol: "NVDA", name: "NVIDIA Corporation" },
-    ];
+// Add this near other imports
+const AVAILABLE_STOCKS = [
+  { symbol: "VTI", name: "Vanguard Total Stock Market ETF" },
+  { symbol: "SPY", name: "SPDR S&P 500 ETF" },
+  { symbol: "QQQ", name: "Invesco QQQ Trust" },
+  { symbol: "AAPL", name: "Apple Inc." },
+  { symbol: "MSFT", name: "Microsoft Corporation" },
+  { symbol: "GOOGL", name: "Alphabet Inc." },
+  { symbol: "AMZN", name: "Amazon.com Inc." },
+  { symbol: "META", name: "Meta Platforms Inc." },
+  { symbol: "TSLA", name: "Tesla Inc." },
+  { symbol: "NVDA", name: "NVIDIA Corporation" },
+];
 
 let hub: Hub = {
   climate: {
@@ -93,9 +99,228 @@ const sendMessage = async (message: string) => {
 
       return textComponent;
     },
-    
     // Add this to the tools object in streamUI
     tools: {
+      getStockNews: {
+        description:
+          "get latest news and information about stocks and market movements",
+        parameters: z.object({
+          query: z.string().describe("stock-related query"),
+        }),
+        generate: async function* ({ query }) {
+          const toolCallId = generateId();
+
+          try {
+            // Search for the stock information
+            const searchParams = {
+              api_key: process.env.SERPAPI_KEY,
+              engine: "google",
+              q: query,
+              num: 8,
+            };
+
+            const response = await getJson(searchParams);
+            console.log("SERP API Response:", response);
+
+            // Extract the most relevant information from the SERP response
+            const extractedData = {
+              topStories: response.top_stories || [],
+              organicResults: response.organic_results || [],
+              knowledgeGraph: response.knowledge_graph || {},
+            };
+
+            // Send the extracted data to OpenAI for analysis
+            const openaiResponse = await fetch(
+              "https://api.openai.com/v1/chat/completions",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+                },
+                body: JSON.stringify({
+                  model: "gpt-4-turbo",
+                  messages: [
+                    {
+                      role: "system",
+                      content:
+                        "You are a financial analyst who provides concise summaries of stock market news. Focus on explaining key reasons for stock price movements.",
+                    },
+                    {
+                      role: "user",
+                      content: `Based on this recent search data about "${query}", provide a brief analysis on what's happening with this stock and why: ${JSON.stringify(
+                        extractedData
+                      )}`,
+                    },
+                  ],
+                  temperature: 0.3,
+                  max_tokens: 350,
+                }),
+              }
+            );
+
+            const openaiData = await openaiResponse.json();
+            const analysis = openaiData.choices[0].message.content;
+
+            // Return both the SERP results and OpenAI analysis to the UI
+            messages.done([
+              ...(messages.get() as CoreMessage[]),
+              {
+                role: "assistant",
+                content: [
+                  {
+                    type: "tool-call",
+                    toolCallId,
+                    toolName: "getStockNews",
+                    args: { query },
+                  },
+                ],
+              },
+              {
+                role: "tool",
+                content: [
+                  {
+                    type: "tool-result",
+                    toolName: "getStockNews",
+                    toolCallId,
+                    result: {
+                      serpResponse: response,
+                      openaiAnalysis: analysis,
+                    },
+                  },
+                ],
+              },
+            ]);
+
+            return (
+              <Message
+                role="assistant"
+                content={
+                  <div className="w-full max-w-6xl mx-auto p-4">
+                    <h2 className="text-xl font-semibold mb-4">
+                      Results for: {query}
+                    </h2>
+
+                    {/* AI Analysis Section */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 prose prose-blue max-w-none">
+                      <h3 className="text-lg font-medium mb-4">Analysis</h3>
+                      <div 
+                        className="text-gray-800 space-y-4"
+                        dangerouslySetInnerHTML={{ 
+                          __html: marked.parse(analysis, {
+                            breaks: true,
+                            gfm: true
+                          }) 
+                        }}
+                      />
+                    </div>
+
+                    {/* Stock Price Section */}
+                    {response.knowledge_graph?.stock_price && (
+                      <div className="border rounded-lg p-4 mb-6">
+                        <h3 className="text-lg font-medium mb-2">Stock Info</h3>
+                        <p className="text-xl font-bold">
+                          {response.knowledge_graph.stock_price}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Top Stories Section */}
+                    {response.top_stories &&
+                      response.top_stories.length > 0 && (
+                        <div className="mb-6">
+                          <h3 className="text-lg font-medium mb-2">
+                            Latest News
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {response.top_stories
+                              .slice(0, 4)
+                              .map((story : any, index : number) => (
+                                <div
+                                  key={index}
+                                  className="border rounded-lg p-4 flex"
+                                >
+                                  {story.thumbnail && (
+                                    <div className="mr-3 flex-shrink-0">
+                                      <img
+                                        src={story.thumbnail}
+                                        alt={story.title}
+                                        className="w-20 h-20 object-cover rounded"
+                                      />
+                                    </div>
+                                  )}
+                                  <div>
+                                    <h4 className="font-medium text-sm">
+                                      {story.title}
+                                    </h4>
+                                    <div className="flex items-center mt-2 text-xs">
+                                      <span className="text-gray-500">
+                                        {story.source} • {story.date}
+                                      </span>
+                                    </div>
+                                    <a
+                                      href={story.link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-500 text-xs hover:underline mt-1 inline-block"
+                                    >
+                                      Read more
+                                    </a>
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+
+                    {/* Organic Results Section */}
+                    <div>
+                      <h3 className="text-lg font-medium mb-2">
+                        Additional Information
+                      </h3>
+                      <div className="space-y-4">
+                        {response.organic_results
+                          ?.slice(0, 3)
+                          .map((result : any, index : number) => (
+                            <div key={index} className="border rounded-lg p-4">
+                              <h3 className="font-medium">{result.title}</h3>
+                              <p className="text-sm text-gray-600">
+                                {result.snippet}
+                              </p>
+                              <div className="flex justify-between items-center mt-2">
+                                <a
+                                  href={result.link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-500 text-sm hover:underline"
+                                >
+                                  Read more
+                                </a>
+                                {result.displayed_link && (
+                                  <span className="text-xs text-gray-500">
+                                    {result.displayed_link}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  </div>
+                }
+              />
+            );
+          } catch (error) {
+            console.error("Error:", error);
+            return (
+              <Message
+                role="assistant"
+                content="Sorry, I couldn't fetch the stock information at this moment."
+              />
+            );
+          }
+        },
+      },
       viewCameras: {
         description: "view current active cameras",
         parameters: z.object({}),
@@ -131,6 +356,7 @@ const sendMessage = async (message: string) => {
           return <Message role="assistant" content={<CameraView />} />;
         },
       },
+
       listStocks: {
         description: "list all available stocks and ETFs",
         parameters: z.object({}),
@@ -138,10 +364,10 @@ const sendMessage = async (message: string) => {
           const toolCallId = generateId();
           const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
           const url = `https://www.alphavantage.co/query?function=TOP_GAINERS_LOSERS&apikey=${apiKey}`;
-          
+
           const response = await fetch(url);
           const data = await response.json();
-      
+
           messages.done([
             ...(messages.get() as CoreMessage[]),
             {
@@ -167,19 +393,19 @@ const sendMessage = async (message: string) => {
               ],
             },
           ]);
-      
+
           return (
             <Message
               role="assistant"
               // Update max-width in listStocks
-                content={
-                  <div className="w-full max-w-6xl mx-auto p-4">
-                    <StockList
-                      gainers={data.top_gainers || []}
-                      losers={data.top_losers || []}
-                      activelyTraded={data.most_actively_traded || []}
-                    />
-                  </div>
+              content={
+                <div className="w-full max-w-6xl mx-auto p-4">
+                  <StockList
+                    gainers={data.top_gainers || []}
+                    losers={data.top_losers || []}
+                    activelyTraded={data.most_actively_traded || []}
+                  />
+                </div>
               }
             />
           );
@@ -193,7 +419,6 @@ const sendMessage = async (message: string) => {
           const toolCallId = generateId();
 
           messages.done([
-
             ...(messages.get() as CoreMessage[]),
             {
               role: "assistant",
@@ -231,10 +456,10 @@ const sendMessage = async (message: string) => {
               high: z.number(),
             }),
             lights: z.array(
-              z.object({ name: z.string(), status: z.boolean() }),
+              z.object({ name: z.string(), status: z.boolean() })
             ),
             locks: z.array(
-              z.object({ name: z.string(), isLocked: z.boolean() }),
+              z.object({ name: z.string(), isLocked: z.boolean() })
             ),
           }),
         }),
@@ -314,13 +539,13 @@ const sendMessage = async (message: string) => {
         description: "fetch and display current stock or ETF information",
         parameters: z.object({
           symbol: z.string().describe("stock or ETF symbol"),
-          timeframe: z.enum(['recent', 'full', 'historical']).optional(),
+          timeframe: z.enum(["recent", "full", "historical"]).optional(),
           month: z.string().optional(),
         }),
-        generate: async function* ({ symbol, timeframe = 'recent', month }) {
+        generate: async function* ({ symbol, timeframe = "recent", month }) {
           const toolCallId = generateId();
           const stockData = await getStockData(symbol, timeframe, month);
-      
+
           messages.done([
             ...(messages.get() as CoreMessage[]),
             {
@@ -346,18 +571,25 @@ const sendMessage = async (message: string) => {
               ],
             },
           ]);
-      
-          return <Message role="assistant" content={<StockView data={stockData} symbol={symbol} />} />;
+
+          return (
+            <Message
+              role="assistant"
+              content={<StockView data={stockData} symbol={symbol} />}
+            />
+          );
         },
       },
       listIndianStocks: {
         description: "show Indian market stocks information",
         parameters: z.object({
-          symbol: z.string().describe("Indian stock symbol (e.g., RELIANCE.BSE, TCS.BSE)")
+          symbol: z
+            .string()
+            .describe("Indian stock symbol (e.g., RELIANCE.BSE, TCS.BSE)"),
         }),
         generate: async function* ({ symbol }) {
           const toolCallId = generateId();
-          const apiKey = process.env.ALPHA_VANTAGE_API_KEY;        
+          const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
           const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&outputsize=compact&apikey=${apiKey}`;
           const response = await fetch(url);
           const data = await response.json();
@@ -392,11 +624,11 @@ const sendMessage = async (message: string) => {
             <Message
               role="assistant"
               // Update max-width in listIndianStocks
-                content={
-                  <div className="w-full max-w-6xl mx-auto p-4">
-                    <h2 className="text-xl font-semibold mb-4">Indian Markets</h2>
-                    <StockDataDisplay apiData={data} />
-                  </div>
+              content={
+                <div className="w-full max-w-6xl mx-auto p-4">
+                  <h2 className="text-xl font-semibold mb-4">Indian Markets</h2>
+                  <StockDataDisplay apiData={data} />
+                </div>
               }
             />
           );
