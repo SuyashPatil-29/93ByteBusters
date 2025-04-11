@@ -19,15 +19,15 @@ export default function Home() {
     useScrollToBottom<HTMLDivElement>();
 
   const suggestedActions = [
-    { 
-      title: "Explain", 
-      label: "why VTI is down today", 
-      action: "Why is VTI down today?" 
+    {
+      title: "Explain",
+      label: "why VTI is down today",
+      action: "Why is VTI down today?",
     },
-    { 
-      title: "Show me", 
-      label: "tech ETF performance", 
-      action: "Show tech ETF performance" 
+    {
+      title: "Show me",
+      label: "tech ETF performance",
+      action: "Show tech ETF performance",
     },
     {
       title: "List",
@@ -56,17 +56,13 @@ export default function Home() {
           {messages.length === 0 && (
             <motion.div className="h-[350px] px-4 w-full md:w-[800px] md:px-0 pt-20">
               <div className="border rounded-lg p-6 flex flex-col gap-4 text-zinc-500 text-sm dark:text-zinc-400 dark:border-zinc-700">
-                <p className="flex flex-row justify-center gap-4 items-center text-zinc-900 dark:text-zinc-50">
-                  <VercelIcon size={16} />
-                  <span>+</span>
-                  <MasonryIcon />
-                </p>
                 <p>
-                  Welcome to your AI Financial Advisor! I can help you track market movements,
-                  analyze stock performance, and provide real-time financial insights. Ask me about
-                  US stocks, Indian markets, ETFs, or get the latest market news.
+                  Welcome to your AI Financial Advisor! I can help you track
+                  market movements, analyze stock performance, and provide
+                  real-time financial insights. Ask me about US stocks, Indian
+                  markets, ETFs, or get the latest market news.
                 </p>
-                <p>
+                <div>
                   Try the suggested actions below or ask me anything about:
                   <ul className="mt-2 ml-4 list-disc">
                     <li>Stock price analysis and trends</li>
@@ -74,18 +70,7 @@ export default function Home() {
                     <li>ETF performance tracking</li>
                     <li>Indian stock market data</li>
                   </ul>
-                </p>
-                <p className="text-xs mt-2">
-                  Powered by{" "}
-                  <Link
-                    className="text-blue-500 dark:text-blue-400"
-                    href="https://sdk.vercel.ai"
-                    target="_blank"
-                  >
-                    Vercel AI
-                  </Link>
-                  {" "}and advanced market data APIs
-                </p>
+                </div>
               </div>
             </motion.div>
           )}
@@ -114,7 +99,7 @@ export default function Home() {
                       />,
                     ]);
                     const response: ReactNode = await sendMessage(
-                      action.action,
+                      action.action
                     );
                     setMessages((messages) => [...messages, response]);
                   }}
