@@ -3,27 +3,22 @@ import { useEffect, useRef, RefObject } from "react";
 export function useScrollToBottom<T extends HTMLElement>(): [
   RefObject<T>,
   RefObject<T>,
+  () => void
 ] {
   const containerRef = useRef<T>(null);
   const endRef = useRef<T>(null);
 
-  useEffect(() => {
-    const container = containerRef.current;
-    const end = endRef.current;
-
-    if (container && end) {
-      const observer = new MutationObserver(() => {
-        end.scrollIntoView({ behavior: "smooth" });
+  const scrollToBottom = () => {
+    if (endRef.current) {
+      requestAnimationFrame(() => {
+        endRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "end",
+          inline: "nearest"
+        });
       });
-
-      observer.observe(container, {
-        childList: true,
-        subtree: true,
-      });
-
-      return () => observer.disconnect();
     }
-  }, []);
+  };
 
-  return [containerRef, endRef];
+  return [containerRef, endRef, scrollToBottom];
 }
