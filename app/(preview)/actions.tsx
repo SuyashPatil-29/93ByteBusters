@@ -839,6 +839,183 @@ const sendMessage = async (message: string) => {
           }
         },
       },
+      getNSEData: {
+        description: "get NSE India equity data for a specific symbol",
+        parameters: z.object({
+          symbol: z
+            .string()
+            .describe("NSE symbol (e.g., AXISVALUE, NIFTY50, etc.)"),
+        }),
+        generate: async function* ({ symbol }) {
+          const toolCallId = generateId();
+
+          try {
+            // Show loading state
+            yield (
+              <Message
+                role="assistant"
+                content={
+                  <div className="w-full max-w-6xl mx-auto p-4">
+                    <p>Fetching NSE data for: {symbol}</p>
+                    <div className="animate-pulse space-y-3 mt-2">
+                      <div className="h-4 bg-gray-200 rounded w-full"></div>
+                      <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                      <div className="h-4 bg-gray-200 rounded w-4/5"></div>
+                    </div>
+                  </div>
+                }
+              />
+            );
+
+            const app = new FirecrawlApp({
+              apiKey: process.env.FIRECRAWL_API_KEY,
+            });
+
+            const url = `https://www.nseindia.com/get-quotes/equity?symbol=${symbol}`;
+
+            const scrapeResult = await app.extract([url], {
+              prompt: `Extract detailed stock information for ${symbol} including:
+                - Current price
+                - Day's high/low
+                - Volume
+                - 52-week high/low
+                - Market cap
+                - P/E ratio
+                - Any other relevant trading data`,
+            });
+
+            if (!scrapeResult.success) {
+              throw new Error(scrapeResult.error);
+            }
+
+            console.log("Scrape Result:", JSON.stringify(scrapeResult));
+
+            messages.done([
+              ...(messages.get() as CoreMessage[]),
+              {
+                role: "assistant",
+                content: [
+                  {
+                    type: "tool-call",
+                    toolCallId,
+                    toolName: "getNSEData",
+                    args: { symbol },
+                  },
+                ],
+              },
+              {
+                role: "tool",
+                content: [
+                  {
+                    type: "tool-result",
+                    toolName: "getNSEData",
+                    toolCallId,
+                    result: scrapeResult.data,
+                  },
+                ],
+              },
+            ]);
+
+            return (
+              <Message
+                role="assistant"
+                content={
+                  <div className="w-full max-w-5xl mx-auto px-4">
+                    <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm p-6">
+                      <h2 className="text-lg font-semibold mb-4">
+                        {symbol} - NSE Data
+                      </h2>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {typeof scrapeResult.data === "string" ? (
+                          <div
+                            className="prose prose-sm max-w-none text-gray-800 dark:text-gray-200"
+                            dangerouslySetInnerHTML={{
+                              __html: marked.parse(scrapeResult.data),
+                            }}
+                          />
+                        ) : (
+                          Object.entries(scrapeResult.data).map(
+                            ([key, value]) => {
+                              // Skip empty objects
+                              if (
+                                typeof value === "object" &&
+                                value !== null &&
+                                Object.keys(value).length === 0
+                              ) {
+                                return null;
+                              }
+
+                              // Handle nested objects
+                              if (typeof value === "object" && value !== null) {
+                                return (
+                                  <div
+                                    key={key}
+                                    className="border dark:border-zinc-700 p-4 rounded"
+                                  >
+                                    <span className="text-sm text-zinc-500 block mb-2">
+                                      {key.replace(/([A-Z])/g, " $1").trim()}
+                                    </span>
+                                    <div className="pl-4 space-y-2">
+                                      {Object.entries(value).map(
+                                        ([nestedKey, nestedValue]) => (
+                                          <div key={nestedKey}>
+                                            <span className="text-sm text-zinc-500">
+                                              {nestedKey
+                                                .replace(/([A-Z])/g, " $1")
+                                                .trim()}
+                                            </span>
+                                            <div className="font-medium">
+                                              {nestedValue === null
+                                                ? "—"
+                                                : String(nestedValue)}
+                                            </div>
+                                          </div>
+                                        )
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              }
+
+                              // Handle regular key-value pairs
+                              return (
+                                <div
+                                  key={key}
+                                  className="border-b dark:border-zinc-700 pb-2"
+                                >
+                                  <span className="text-sm text-zinc-500">
+                                    {key.replace(/([A-Z])/g, " $1").trim()}
+                                  </span>
+                                  <div className="font-medium">
+                                    {value === null ? "—" : String(value)}
+                                  </div>
+                                </div>
+                              );
+                            }
+                          )
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                }
+              />
+            );
+          } catch (error: any) {
+            return (
+              <Message
+                role="assistant"
+                content={
+                  <div className="text-red-500">
+                    Error fetching NSE data: {error.message}
+                    <br />
+                    Please provide a valid NSE symbol (e.g., AXISVALUE, NIFTY50)
+                  </div>
+                }
+              />
+            );
+          }
+        },
+      },
       listIndianStocks: {
         description: "show Indian market stocks information",
         parameters: z.object({
@@ -848,8 +1025,7 @@ const sendMessage = async (message: string) => {
         }),
         generate: async function* ({ symbol }) {
           const toolCallId = generateId();
-
-          // Show loading state for Indian stocks
+          
           yield (
             <Message
               role="assistant"

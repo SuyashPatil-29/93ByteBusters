@@ -5,8 +5,6 @@ import { useActions } from "ai/rsc";
 import { Message } from "@/components/message";
 import { useScrollToBottom } from "@/components/use-scroll-to-bottom";
 import { motion } from "framer-motion";
-import { MasonryIcon, VercelIcon } from "@/components/icons";
-import Link from "next/link";
 
 export default function Home() {
   const { sendMessage } = useActions();
@@ -21,13 +19,18 @@ export default function Home() {
   const suggestedActions = [
     {
       title: "Explain",
-      label: "why VTI is down today",
-      action: "Why is VTI down today?",
+      label: "why Tesla is down today",
+      action: "Why is Tesla down today?",
     },
     {
       title: "Show me",
       label: "tech ETF performance",
       action: "Show tech ETF performance",
+    },
+    {
+      title: "Get NSE",
+      label: "equity data by symbol",
+      action: "Get NSE equity data for symbol: ",
     },
     {
       title: "List",
@@ -54,22 +57,85 @@ export default function Home() {
           className="flex flex-col gap-3 h-full w-dvw items-center overflow-y-scroll"
         >
           {messages.length === 0 && (
-            <motion.div className="h-[350px] px-4 w-full md:w-[800px] md:px-0 pt-20">
-              <div className="border rounded-lg p-6 flex flex-col gap-4 text-zinc-500 text-sm dark:text-zinc-400 dark:border-zinc-700">
-                <p>
-                  Welcome to your AI Financial Advisor! I can help you track
-                  market movements, analyze stock performance, and provide
-                  real-time financial insights. Ask me about US stocks, Indian
-                  markets, ETFs, or get the latest market news.
-                </p>
-                <div>
-                  Try the suggested actions below or ask me anything about:
-                  <ul className="mt-2 ml-4 list-disc">
-                    <li>Stock price analysis and trends</li>
-                    <li>Market news and updates</li>
-                    <li>ETF performance tracking</li>
-                    <li>Indian stock market data</li>
-                  </ul>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="h-[350px] px-4 w-full md:w-[800px] md:px-0 pt-8"
+            >
+              <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg p-6 space-y-6">
+                <div className="flex items-center space-x-4">
+                  <div className="h-10 w-10 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+                    <svg
+                      className="w-5 h-5 text-zinc-500 dark:text-zinc-400"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        fill="none"
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="1.5"
+                        d="M12 21V12m0 9L7 15m5 6l5-3m3-4V5a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h4"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <h1 className="text-lg font-medium tracking-tight text-zinc-900 dark:text-zinc-50">
+                      Financial Assistant
+                    </h1>
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                      Real-time market insights and analysis
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <div className="p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
+                    <div className="text-sm font-medium mb-1">
+                      Stock Analysis
+                    </div>
+                    <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                      Price trends and performance metrics
+                    </div>
+                  </div>
+                  <div className="p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
+                    <div className="text-sm font-medium mb-1">Market News</div>
+                    <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                      Latest updates and insights
+                    </div>
+                  </div>
+                  <div className="p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
+                    <div className="text-sm font-medium mb-1">ETF Tracking</div>
+                    <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                      Fund performance and holdings
+                    </div>
+                  </div>
+                  <div className="p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
+                    <div className="text-sm font-medium mb-1">
+                      Indian Markets
+                    </div>
+                    <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                      NSE and BSE data analysis
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center pt-2">
+                  <div className="h-8 w-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mr-3">
+                    <svg className="w-4 h-4 text-zinc-500" viewBox="0 0 24 24">
+                      <path
+                        fill="none"
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="1.5"
+                        d="m9 7-5 5 5 5m6 0 5-5-5-5"
+                      />
+                    </svg>
+                  </div>
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                    Try the suggestions below to get started
+                  </p>
                 </div>
               </div>
             </motion.div>

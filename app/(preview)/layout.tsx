@@ -17,10 +17,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <Navbar />
       <body>
         <Toaster position="top-center" richColors />
-        <AI>{children}</AI>
+        <AI>
+          <Navbar />
+          {children}
+        </AI>
       </body>
     </html>
   );
