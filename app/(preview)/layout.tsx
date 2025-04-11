@@ -2,6 +2,7 @@ import "./globals.css";
 import { Metadata } from "next";
 import { Toaster } from "sonner";
 import { AI } from "./actions";
+import Navbar from "@/components/Navbar";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://ai-sdk-preview-rsc-genui.vercel.dev"),
@@ -16,6 +17,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <Navbar />
       <body>
         <Toaster position="top-center" richColors />
         <AI>{children}</AI>
