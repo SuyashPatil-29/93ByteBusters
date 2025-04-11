@@ -171,14 +171,15 @@ const sendMessage = async (message: string) => {
           return (
             <Message
               role="assistant"
-              content={
-                <div className="w-full max-w-3xl mx-auto p-4">
-                  <StockList
-                    gainers={data.top_gainers || []}
-                    losers={data.top_losers || []}
-                    activelyTraded={data.most_actively_traded || []}
-                  />
-                </div>
+              // Update max-width in listStocks
+                content={
+                  <div className="w-full max-w-6xl mx-auto p-4">
+                    <StockList
+                      gainers={data.top_gainers || []}
+                      losers={data.top_losers || []}
+                      activelyTraded={data.most_actively_traded || []}
+                    />
+                  </div>
               }
             />
           );
@@ -390,11 +391,12 @@ const sendMessage = async (message: string) => {
           return (
             <Message
               role="assistant"
-              content={
-                <div className="w-full max-w-4xl mx-auto p-4">
-                  <h2 className="text-xl font-semibold mb-4">Indian Markets</h2>
-                  <StockDataDisplay apiData={data} />
-                </div>
+              // Update max-width in listIndianStocks
+                content={
+                  <div className="w-full max-w-6xl mx-auto p-4">
+                    <h2 className="text-xl font-semibold mb-4">Indian Markets</h2>
+                    <StockDataDisplay apiData={data} />
+                  </div>
               }
             />
           );

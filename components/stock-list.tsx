@@ -45,7 +45,7 @@ export const StockList = ({ gainers, losers, activelyTraded }: StockListProps) =
   };
 
   return (
-    <div className="space-y-6">
+    <div className="w-full max-w-[1400px] mx-auto space-y-8">
       <div>
         <h3 className="text-lg font-medium mb-3">Top Gainers</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

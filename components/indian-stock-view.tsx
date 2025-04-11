@@ -123,7 +123,7 @@ export function StockChart({ apiData }: StockChartProps) {
   };
 
   return (
-    <Card className="w-full">
+    <Card className="w-full max-w-[1400px] mx-auto">
       <CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
         <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6">
           <CardTitle>{symbol} Stock Data</CardTitle>
@@ -155,7 +155,7 @@ export function StockChart({ apiData }: StockChartProps) {
       <CardContent className="px-2 sm:p-6">
         <ChartContainer
           config={chartConfig}
-          className="aspect-auto h-[350px] w-full"
+          className="aspect-auto h-[500px] w-full"  // Increased height
         >
           <LineChart
             accessibilityLayer
@@ -217,7 +217,7 @@ export function StockChart({ apiData }: StockChartProps) {
           <h3 className="mb-4 text-lg font-medium">Trading Volume</h3>
           <ChartContainer
             config={chartConfig}
-            className="aspect-auto h-[200px] w-full"
+            className="aspect-auto h-[300px] w-full"  // Increased height
           >
             <BarChart
               accessibilityLayer

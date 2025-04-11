@@ -54,7 +54,7 @@ export default function Home() {
           className="flex flex-col gap-3 h-full w-dvw items-center overflow-y-scroll"
         >
           {messages.length === 0 && (
-            <motion.div className="h-[350px] px-4 w-full md:w-[500px] md:px-0 pt-20">
+            <motion.div className="h-[350px] px-4 w-full md:w-[800px] md:px-0 pt-20">
               <div className="border rounded-lg p-6 flex flex-col gap-4 text-zinc-500 text-sm dark:text-zinc-400 dark:border-zinc-700">
                 <p className="flex flex-row justify-center gap-4 items-center text-zinc-900 dark:text-zinc-50">
                   <VercelIcon size={16} />
@@ -85,7 +85,7 @@ export default function Home() {
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="grid sm:grid-cols-2 gap-2 w-full px-4 md:px-0 mx-auto md:max-w-[500px] mb-4">
+        <div className="grid sm:grid-cols-2 gap-2 w-full px-4 md:px-0 mx-auto md:max-w-[800px] mb-4">
           {messages.length === 0 &&
             suggestedActions.map((action, index) => (
               <motion.div
@@ -138,7 +138,7 @@ export default function Home() {
         >
           <input
             ref={inputRef}
-            className="bg-zinc-100 rounded-md px-2 py-1.5 w-full outline-none dark:bg-zinc-700 text-zinc-800 dark:text-zinc-300 md:max-w-[500px] max-w-[calc(100dvw-32px)]"
+            className="bg-zinc-100 rounded-md px-2 py-1.5 w-full outline-none dark:bg-zinc-700 text-zinc-800 dark:text-zinc-300 md:max-w-[800px] max-w-[calc(100dvw-32px)]"
             placeholder="Send a message..."
             value={input}
             onChange={(event) => {
