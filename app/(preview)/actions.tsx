@@ -11,50 +11,18 @@ import {
 import { ReactNode } from "react";
 import { z } from "zod";
 import { CameraView } from "@/components/camera-view";
-import { HubView } from "@/components/hub-view";
-import { UsageView } from "@/components/usage-view";
-import {
-  getStockData,
-  searchStocks,
-  StockData,
-} from "@/services/alpha-vantage";
+import { StockData } from "@/services/alpha-vantage";
 import { StockView } from "@/components/stock-view";
 import { StockList } from "@/components/stock-list";
 import StockDataDisplay from "@/components/indian-stock-view";
-import { marked } from 'marked';
+import { marked } from "marked";
+import FirecrawlApp from "@mendable/firecrawl-js";
 
 export interface Hub {
   climate: Record<"low" | "high", number>;
   lights: Array<{ name: string; status: boolean }>;
   locks: Array<{ name: string; isLocked: boolean }>;
 }
-
-// Add this near other imports
-const AVAILABLE_STOCKS = [
-  { symbol: "VTI", name: "Vanguard Total Stock Market ETF" },
-  { symbol: "SPY", name: "SPDR S&P 500 ETF" },
-  { symbol: "QQQ", name: "Invesco QQQ Trust" },
-  { symbol: "AAPL", name: "Apple Inc." },
-  { symbol: "MSFT", name: "Microsoft Corporation" },
-  { symbol: "GOOGL", name: "Alphabet Inc." },
-  { symbol: "AMZN", name: "Amazon.com Inc." },
-  { symbol: "META", name: "Meta Platforms Inc." },
-  { symbol: "TSLA", name: "Tesla Inc." },
-  { symbol: "NVDA", name: "NVIDIA Corporation" },
-];
-
-let hub: Hub = {
-  climate: {
-    low: 23,
-    high: 25,
-  },
-  lights: [
-    { name: "patio", status: true },
-    { name: "kitchen", status: false },
-    { name: "garage", status: true },
-  ],
-  locks: [{ name: "back door", isLocked: true }],
-};
 
 const sendMessage = async (message: string) => {
   "use server";
@@ -69,20 +37,16 @@ const sendMessage = async (message: string) => {
   const contentStream = createStreamableValue("");
   const textComponent = <TextStreamMessage content={contentStream.value} />;
 
-  // Add new interface for stock view
-  interface StockInfo {
-    symbol: string;
-    data: StockData | null;
-  }
-
   const { value: stream } = await streamUI({
     model: openai("gpt-4o"),
+    // In the sendMessage function, modify the system prompt:
     system: `\
       - you are a financial advisor assistant
       - help explain market movements and fund performance
       - use available tools to fetch and display stock data
       - support different timeframes: recent (default), full (30 days), or historical (specific month)
       - reply in clear, concise language
+      - when user says "yes" after stock news results, automatically call scrapeStockInfo with the first available URL
     `,
     messages: messages.get() as CoreMessage[],
     text: async function* ({ content, done }) {
@@ -109,98 +73,17 @@ const sendMessage = async (message: string) => {
         }),
         generate: async function* ({ query }) {
           const toolCallId = generateId();
-          
-          // Step 1: Show initial loading state with skeletons for all sections
-          yield <Message 
-            role="assistant" 
-            content={
-              <div className="w-full max-w-6xl mx-auto p-4">
-                <h2 className="text-xl font-semibold mb-4">
-                  Loading results for: {query}
-                </h2>
-                
-                {/* AI Analysis Section Loading */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                  <h3 className="text-lg font-medium mb-4">Analysis</h3>
-                  <div className="animate-pulse space-y-3">
-                    <div className="h-4 bg-gray-200 rounded w-full"></div>
-                    <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-                    <div className="h-4 bg-gray-200 rounded w-4/5"></div>
-                    <div className="h-4 bg-gray-200 rounded w-full"></div>
-                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                  </div>
-                </div>
-                
-                {/* Stock Price Section Loading */}
-                <div className="border rounded-lg p-4 mb-6">
-                  <h3 className="text-lg font-medium mb-2">Stock Info</h3>
-                  <div className="animate-pulse">
-                    <div className="h-8 bg-gray-200 rounded w-40"></div>
-                  </div>
-                </div>
-                
-                {/* Top Stories Section Loading */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-medium mb-2">Latest News</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[...Array(4)].map((_, index) => (
-                      <div key={index} className="border rounded-lg p-4 flex">
-                        <div className="mr-3 flex-shrink-0">
-                          <div className="animate-pulse bg-gray-200 w-20 h-20 rounded"></div>
-                        </div>
-                        <div className="flex-grow">
-                          <div className="animate-pulse space-y-2">
-                            <div className="h-4 bg-gray-200 rounded w-full"></div>
-                            <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-                            <div className="h-3 bg-gray-200 rounded w-1/3"></div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                {/* Organic Results Section Loading */}
-                <div>
-                  <h3 className="text-lg font-medium mb-2">Additional Information</h3>
-                  <div className="space-y-4">
-                    {[...Array(3)].map((_, index) => (
-                      <div key={index} className="border rounded-lg p-4">
-                        <div className="animate-pulse space-y-3">
-                          <div className="h-5 bg-gray-200 rounded w-3/4"></div>
-                          <div className="h-4 bg-gray-200 rounded w-full"></div>
-                          <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-                          <div className="flex justify-between items-center mt-2">
-                            <div className="h-3 bg-gray-200 rounded w-24"></div>
-                            <div className="h-3 bg-gray-200 rounded w-32"></div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            }
-          />;
-          
-          try {
-            // Step 2: Search for the stock information
-            const searchParams = {
-              api_key: process.env.SERPAPI_KEY,
-              engine: "google",
-              q: query,
-              num: 8,
-            };
 
-            // Show loading state with SERP API in progress
-            yield <Message 
-              role="assistant" 
+          // Step 1: Show initial loading state with skeletons for all sections
+          yield (
+            <Message
+              role="assistant"
               content={
                 <div className="w-full max-w-6xl mx-auto p-4">
                   <h2 className="text-xl font-semibold mb-4">
-                    Searching for: {query}
+                    Loading results for: {query}
                   </h2>
-                  
+
                   {/* AI Analysis Section Loading */}
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                     <h3 className="text-lg font-medium mb-4">Analysis</h3>
@@ -212,7 +95,7 @@ const sendMessage = async (message: string) => {
                       <div className="h-4 bg-gray-200 rounded w-3/4"></div>
                     </div>
                   </div>
-                  
+
                   {/* Stock Price Section Loading */}
                   <div className="border rounded-lg p-4 mb-6">
                     <h3 className="text-lg font-medium mb-2">Stock Info</h3>
@@ -220,7 +103,7 @@ const sendMessage = async (message: string) => {
                       <div className="h-8 bg-gray-200 rounded w-40"></div>
                     </div>
                   </div>
-                  
+
                   {/* Top Stories Section Loading */}
                   <div className="mb-6">
                     <h3 className="text-lg font-medium mb-2">Latest News</h3>
@@ -241,10 +124,12 @@ const sendMessage = async (message: string) => {
                       ))}
                     </div>
                   </div>
-                  
+
                   {/* Organic Results Section Loading */}
                   <div>
-                    <h3 className="text-lg font-medium mb-2">Additional Information</h3>
+                    <h3 className="text-lg font-medium mb-2">
+                      Additional Information
+                    </h3>
                     <div className="space-y-4">
                       {[...Array(3)].map((_, index) => (
                         <div key={index} className="border rounded-lg p-4">
@@ -263,7 +148,97 @@ const sendMessage = async (message: string) => {
                   </div>
                 </div>
               }
-            />;
+            />
+          );
+
+          try {
+            // Step 2: Search for the stock information
+            const searchParams = {
+              api_key: process.env.SERPAPI_KEY,
+              engine: "google",
+              q: query,
+              num: 8,
+            };
+
+            // Show loading state with SERP API in progress
+            yield (
+              <Message
+                role="assistant"
+                content={
+                  <div className="w-full max-w-6xl mx-auto p-4">
+                    <h2 className="text-xl font-semibold mb-4">
+                      Searching for: {query}
+                    </h2>
+
+                    {/* AI Analysis Section Loading */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                      <h3 className="text-lg font-medium mb-4">Analysis</h3>
+                      <div className="animate-pulse space-y-3">
+                        <div className="h-4 bg-gray-200 rounded w-full"></div>
+                        <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                        <div className="h-4 bg-gray-200 rounded w-4/5"></div>
+                        <div className="h-4 bg-gray-200 rounded w-full"></div>
+                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                      </div>
+                    </div>
+
+                    {/* Stock Price Section Loading */}
+                    <div className="border rounded-lg p-4 mb-6">
+                      <h3 className="text-lg font-medium mb-2">Stock Info</h3>
+                      <div className="animate-pulse">
+                        <div className="h-8 bg-gray-200 rounded w-40"></div>
+                      </div>
+                    </div>
+
+                    {/* Top Stories Section Loading */}
+                    <div className="mb-6">
+                      <h3 className="text-lg font-medium mb-2">Latest News</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {[...Array(4)].map((_, index) => (
+                          <div
+                            key={index}
+                            className="border rounded-lg p-4 flex"
+                          >
+                            <div className="mr-3 flex-shrink-0">
+                              <div className="animate-pulse bg-gray-200 w-20 h-20 rounded"></div>
+                            </div>
+                            <div className="flex-grow">
+                              <div className="animate-pulse space-y-2">
+                                <div className="h-4 bg-gray-200 rounded w-full"></div>
+                                <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                                <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Organic Results Section Loading */}
+                    <div>
+                      <h3 className="text-lg font-medium mb-2">
+                        Additional Information
+                      </h3>
+                      <div className="space-y-4">
+                        {[...Array(3)].map((_, index) => (
+                          <div key={index} className="border rounded-lg p-4">
+                            <div className="animate-pulse space-y-3">
+                              <div className="h-5 bg-gray-200 rounded w-3/4"></div>
+                              <div className="h-4 bg-gray-200 rounded w-full"></div>
+                              <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                              <div className="flex justify-between items-center mt-2">
+                                <div className="h-3 bg-gray-200 rounded w-24"></div>
+                                <div className="h-3 bg-gray-200 rounded w-32"></div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                }
+              />
+            );
 
             const response = await getJson(searchParams);
             console.log("SERP API Response:", response);
@@ -276,123 +251,125 @@ const sendMessage = async (message: string) => {
             };
 
             // Show loading state with SERP API complete but OpenAI analysis in progress
-            yield <Message 
-              role="assistant" 
-              content={
-                <div className="w-full max-w-6xl mx-auto p-4">
-                  <h2 className="text-xl font-semibold mb-4">
-                    Results for: {query}
-                  </h2>
-                  
-                  {/* AI Analysis Section Loading */}
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                    <h3 className="text-lg font-medium mb-4">Analysis</h3>
-                    <div className="animate-pulse space-y-3">
-                      <div className="h-4 bg-gray-200 rounded w-full"></div>
-                      <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-                      <div className="h-4 bg-gray-200 rounded w-4/5"></div>
-                      <div className="h-4 bg-gray-200 rounded w-full"></div>
-                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                    </div>
-                    <div className="text-sm text-blue-500 mt-3">
-                      Analyzing data...
-                    </div>
-                  </div>
-                  
-                  {/* Stock Price Section - Real Data */}
-                  {response.knowledge_graph?.stock_price && (
-                    <div className="border rounded-lg p-4 mb-6">
-                      <h3 className="text-lg font-medium mb-2">Stock Info</h3>
-                      <p className="text-xl font-bold">
-                        {response.knowledge_graph.stock_price}
-                      </p>
-                    </div>
-                  )}
+            yield (
+              <Message
+                role="assistant"
+                content={
+                  <div className="w-full max-w-6xl mx-auto p-4">
+                    <h2 className="text-xl font-semibold mb-4">
+                      Results for: {query}
+                    </h2>
 
-                  {/* Top Stories Section - Real Data */}
-                  {response.top_stories &&
-                    response.top_stories.length > 0 && (
-                      <div className="mb-6">
-                        <h3 className="text-lg font-medium mb-2">
-                          Latest News
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {response.top_stories
-                            .slice(0, 4)
-                            .map((story : any, index : number) => (
-                              <div
-                                key={index}
-                                className="border rounded-lg p-4 flex"
-                              >
-                                {story.thumbnail && (
-                                  <div className="mr-3 flex-shrink-0">
-                                    <img
-                                      src={story.thumbnail}
-                                      alt={story.title}
-                                      className="w-20 h-20 object-cover rounded"
-                                    />
-                                  </div>
-                                )}
-                                <div>
-                                  <h4 className="font-medium text-sm">
-                                    {story.title}
-                                  </h4>
-                                  <div className="flex items-center mt-2 text-xs">
-                                    <span className="text-gray-500">
-                                      {story.source} • {story.date}
-                                    </span>
-                                  </div>
-                                  <a
-                                    href={story.link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-blue-500 text-xs hover:underline mt-1 inline-block"
-                                  >
-                                    Read more
-                                  </a>
-                                </div>
-                              </div>
-                            ))}
-                        </div>
+                    {/* AI Analysis Section Loading */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                      <h3 className="text-lg font-medium mb-4">Analysis</h3>
+                      <div className="animate-pulse space-y-3">
+                        <div className="h-4 bg-gray-200 rounded w-full"></div>
+                        <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                        <div className="h-4 bg-gray-200 rounded w-4/5"></div>
+                        <div className="h-4 bg-gray-200 rounded w-full"></div>
+                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                      </div>
+                      <div className="text-sm text-blue-500 mt-3">
+                        Analyzing data...
+                      </div>
+                    </div>
+
+                    {/* Stock Price Section - Real Data */}
+                    {response.knowledge_graph?.stock_price && (
+                      <div className="border rounded-lg p-4 mb-6">
+                        <h3 className="text-lg font-medium mb-2">Stock Info</h3>
+                        <p className="text-xl font-bold">
+                          {response.knowledge_graph.stock_price}
+                        </p>
                       </div>
                     )}
 
-                  {/* Organic Results Section - Real Data */}
-                  <div>
-                    <h3 className="text-lg font-medium mb-2">
-                      Additional Information
-                    </h3>
-                    <div className="space-y-4">
-                      {response.organic_results
-                        ?.slice(0, 3)
-                        .map((result : any, index : number) => (
-                          <div key={index} className="border rounded-lg p-4">
-                            <h3 className="font-medium">{result.title}</h3>
-                            <p className="text-sm text-gray-600">
-                              {result.snippet}
-                            </p>
-                            <div className="flex justify-between items-center mt-2">
-                              <a
-                                href={result.link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-500 text-sm hover:underline"
-                              >
-                                Read more
-                              </a>
-                              {result.displayed_link && (
-                                <span className="text-xs text-gray-500">
-                                  {result.displayed_link}
-                                </span>
-                              )}
-                            </div>
+                    {/* Top Stories Section - Real Data */}
+                    {response.top_stories &&
+                      response.top_stories.length > 0 && (
+                        <div className="mb-6">
+                          <h3 className="text-lg font-medium mb-2">
+                            Latest News
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {response.top_stories
+                              .slice(0, 4)
+                              .map((story: any, index: number) => (
+                                <div
+                                  key={index}
+                                  className="border rounded-lg p-4 flex"
+                                >
+                                  {story.thumbnail && (
+                                    <div className="mr-3 flex-shrink-0">
+                                      <img
+                                        src={story.thumbnail}
+                                        alt={story.title}
+                                        className="w-20 h-20 object-cover rounded"
+                                      />
+                                    </div>
+                                  )}
+                                  <div>
+                                    <h4 className="font-medium text-sm">
+                                      {story.title}
+                                    </h4>
+                                    <div className="flex items-center mt-2 text-xs">
+                                      <span className="text-gray-500">
+                                        {story.source} • {story.date}
+                                      </span>
+                                    </div>
+                                    <a
+                                      href={story.link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-500 text-xs hover:underline mt-1 inline-block"
+                                    >
+                                      Read more
+                                    </a>
+                                  </div>
+                                </div>
+                              ))}
                           </div>
-                        ))}
+                        </div>
+                      )}
+
+                    {/* Organic Results Section - Real Data */}
+                    <div>
+                      <h3 className="text-lg font-medium mb-2">
+                        Additional Information
+                      </h3>
+                      <div className="space-y-4">
+                        {response.organic_results
+                          ?.slice(0, 3)
+                          .map((result: any, index: number) => (
+                            <div key={index} className="border rounded-lg p-4">
+                              <h3 className="font-medium">{result.title}</h3>
+                              <p className="text-sm text-gray-600">
+                                {result.snippet}
+                              </p>
+                              <div className="flex justify-between items-center mt-2">
+                                <a
+                                  href={result.link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-500 text-sm hover:underline"
+                                >
+                                  Read more
+                                </a>
+                                {result.displayed_link && (
+                                  <span className="text-xs text-gray-500">
+                                    {result.displayed_link}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              }
-            />;
+                }
+              />
+            );
 
             // Send the extracted data to OpenAI for analysis
             const openaiResponse = await fetch(
@@ -459,122 +436,149 @@ const sendMessage = async (message: string) => {
 
             // Final render with all real data
             return (
-              <Message
-                role="assistant"
-                content={
-                  <div className="w-full max-w-6xl mx-auto p-4">
-                    <h2 className="text-xl font-semibold mb-4">
-                      Results for: {query}
-                    </h2>
+              <>
+                <Message
+                  role="assistant"
+                  content={
+                    <div className="w-full max-w-6xl mx-auto p-4">
+                      <h2 className="text-xl font-semibold mb-4">
+                        Results for: {query}
+                      </h2>
 
-                    {/* AI Analysis Section */}
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 prose prose-blue max-w-none">
-                      <h3 className="text-lg font-medium mb-4">Analysis</h3>
-                      <div 
-                        className="text-gray-800 space-y-4"
-                        dangerouslySetInnerHTML={{ 
-                          __html: marked.parse(analysis, {
-                            breaks: true,
-                            gfm: true
-                          }) 
-                        }}
-                      />
-                    </div>
-
-                    {/* Stock Price Section */}
-                    {response.knowledge_graph?.stock_price && (
-                      <div className="border rounded-lg p-4 mb-6">
-                        <h3 className="text-lg font-medium mb-2">Stock Info</h3>
-                        <p className="text-xl font-bold">
-                          {response.knowledge_graph.stock_price}
-                        </p>
+                      {/* AI Analysis Section */}
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 prose prose-blue max-w-none">
+                        <h3 className="text-lg font-medium mb-4">Analysis</h3>
+                        <div
+                          className="text-gray-800 space-y-4"
+                          dangerouslySetInnerHTML={{
+                            __html: marked.parse(analysis, {
+                              breaks: true,
+                              gfm: true,
+                            }),
+                          }}
+                        />
                       </div>
-                    )}
 
-                    {/* Top Stories Section */}
-                    {response.top_stories &&
-                      response.top_stories.length > 0 && (
-                        <div className="mb-6">
+                      {/* Stock Price Section */}
+                      {response.knowledge_graph?.stock_price && (
+                        <div className="border rounded-lg p-4 mb-6">
                           <h3 className="text-lg font-medium mb-2">
-                            Latest News
+                            Stock Info
                           </h3>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {response.top_stories
-                              .slice(0, 4)
-                              .map((story : any, index : number) => (
-                                <div
-                                  key={index}
-                                  className="border rounded-lg p-4 flex"
-                                >
-                                  {story.thumbnail && (
-                                    <div className="mr-3 flex-shrink-0">
-                                      <img
-                                        src={story.thumbnail}
-                                        alt={story.title}
-                                        className="w-20 h-20 object-cover rounded"
-                                      />
-                                    </div>
-                                  )}
-                                  <div>
-                                    <h4 className="font-medium text-sm">
-                                      {story.title}
-                                    </h4>
-                                    <div className="flex items-center mt-2 text-xs">
-                                      <span className="text-gray-500">
-                                        {story.source} • {story.date}
-                                      </span>
-                                    </div>
-                                    <a
-                                      href={story.link}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-blue-500 text-xs hover:underline mt-1 inline-block"
-                                    >
-                                      Read more
-                                    </a>
-                                  </div>
-                                </div>
-                              ))}
-                          </div>
+                          <p className="text-xl font-bold">
+                            {response.knowledge_graph.stock_price}
+                          </p>
                         </div>
                       )}
 
-                    {/* Organic Results Section */}
-                    <div>
-                      <h3 className="text-lg font-medium mb-2">
-                        Additional Information
-                      </h3>
-                      <div className="space-y-4">
-                        {response.organic_results
-                          ?.slice(0, 3)
-                          .map((result : any, index : number) => (
-                            <div key={index} className="border rounded-lg p-4">
-                              <h3 className="font-medium">{result.title}</h3>
-                              <p className="text-sm text-gray-600">
-                                {result.snippet}
-                              </p>
-                              <div className="flex justify-between items-center mt-2">
-                                <a
-                                  href={result.link}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-500 text-sm hover:underline"
-                                >
-                                  Read more
-                                </a>
-                                {result.displayed_link && (
-                                  <span className="text-xs text-gray-500">
-                                    {result.displayed_link}
-                                  </span>
-                                )}
-                              </div>
+                      {/* Top Stories Section */}
+                      {response.top_stories &&
+                        response.top_stories.length > 0 && (
+                          <div className="mb-6">
+                            <h3 className="text-lg font-medium mb-2">
+                              Latest News
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {response.top_stories
+                                .slice(0, 4)
+                                .map((story: any, index: number) => (
+                                  <div
+                                    key={index}
+                                    className="border rounded-lg p-4 flex"
+                                  >
+                                    {story.thumbnail && (
+                                      <div className="mr-3 flex-shrink-0">
+                                        <img
+                                          src={story.thumbnail}
+                                          alt={story.title}
+                                          className="w-20 h-20 object-cover rounded"
+                                        />
+                                      </div>
+                                    )}
+                                    <div>
+                                      <h4 className="font-medium text-sm">
+                                        {story.title}
+                                      </h4>
+                                      <div className="flex items-center mt-2 text-xs">
+                                        <span className="text-gray-500">
+                                          {story.source} • {story.date}
+                                        </span>
+                                      </div>
+                                      <a
+                                        href={story.link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-blue-500 text-xs hover:underline mt-1 inline-block"
+                                      >
+                                        Read more
+                                      </a>
+                                    </div>
+                                  </div>
+                                ))}
                             </div>
-                          ))}
+                          </div>
+                        )}
+
+                      {/* Organic Results Section */}
+                      <div>
+                        <h3 className="text-lg font-medium mb-2">
+                          Additional Information
+                        </h3>
+                        <div className="space-y-4">
+                          {response.organic_results
+                            ?.slice(0, 3)
+                            .map((result: any, index: number) => (
+                              <div
+                                key={index}
+                                className="border rounded-lg p-4"
+                              >
+                                <h3 className="font-medium">{result.title}</h3>
+                                <p className="text-sm text-gray-600">
+                                  {result.snippet}
+                                </p>
+                                <div className="flex justify-between items-center mt-2">
+                                  <a
+                                    href={result.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-500 text-sm hover:underline"
+                                  >
+                                    Read more
+                                  </a>
+                                  {result.displayed_link && (
+                                    <span className="text-xs text-gray-500">
+                                      {result.displayed_link}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                }
-              />
+                  }
+                />
+                <Message
+                  role="assistant"
+                  content={
+                    <div className="w-full max-w-6xl mx-auto p-4">
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <p className="font-medium">
+                          Would you like me to scrape detailed information from
+                          the first news article?
+                        </p>
+                        <p className="mt-2 text-sm text-gray-600">
+                          Just reply "yes" and I'll extract the full content
+                          from:{" "}
+                          {response.top_stories?.[0]?.link ||
+                            response.organic_results?.[0]?.link ||
+                            "the first available source"}
+                        </p>
+                      </div>
+                    </div>
+                  }
+                />
+              </>
             );
           } catch (error) {
             console.error("Error:", error);
@@ -587,42 +591,6 @@ const sendMessage = async (message: string) => {
           }
         },
       },
-      viewCameras: {
-        description: "view current active cameras",
-        parameters: z.object({}),
-        generate: async function* ({}) {
-          const toolCallId = generateId();
-
-          messages.done([
-            ...(messages.get() as CoreMessage[]),
-            {
-              role: "assistant",
-              content: [
-                {
-                  type: "tool-call",
-                  toolCallId,
-                  toolName: "viewCameras",
-                  args: {},
-                },
-              ],
-            },
-            {
-              role: "tool",
-              content: [
-                {
-                  type: "tool-result",
-                  toolName: "viewCameras",
-                  toolCallId,
-                  result: `The active cameras are currently displayed on the screen`,
-                },
-              ],
-            },
-          ]);
-
-          return <Message role="assistant" content={<CameraView />} />;
-        },
-      },
-
       listStocks: {
         description: "list all available stocks and ETFs",
         parameters: z.object({}),
@@ -677,173 +645,201 @@ const sendMessage = async (message: string) => {
           );
         },
       },
-      viewHub: {
-        description:
-          "view the hub that contains current quick summary and actions for temperature, lights, and locks",
-        parameters: z.object({}),
-        generate: async function* ({}) {
-          const toolCallId = generateId();
-
-          messages.done([
-            ...(messages.get() as CoreMessage[]),
-            {
-              role: "assistant",
-              content: [
-                {
-                  type: "tool-call",
-                  toolCallId,
-                  toolName: "viewHub",
-                  args: {},
-                },
-              ],
-            },
-            {
-              role: "tool",
-              content: [
-                {
-                  type: "tool-result",
-                  toolName: "viewHub",
-                  toolCallId,
-                  result: hub,
-                },
-              ],
-            },
-          ]);
-
-          return <Message role="assistant" content={<HubView hub={hub} />} />;
-        },
-      },
-      updateHub: {
-        description: "update the hub with new values",
+      scrapeStockInfo: {
+        description: "scrape detailed stock information from a given URL",
         parameters: z.object({
-          hub: z.object({
-            climate: z.object({
-              low: z.number(),
-              high: z.number(),
-            }),
-            lights: z.array(
-              z.object({ name: z.string(), status: z.boolean() })
-            ),
-            locks: z.array(
-              z.object({ name: z.string(), isLocked: z.boolean() })
-            ),
-          }),
+          url: z.string().describe("URL to scrape"),
+          query: z.string().describe("original stock query"),
         }),
-        generate: async function* ({ hub: newHub }) {
-          hub = newHub;
+        generate: async function* ({ url, query }) {
           const toolCallId = generateId();
 
-          messages.done([
-            ...(messages.get() as CoreMessage[]),
-            {
-              role: "assistant",
-              content: [
-                {
-                  type: "tool-call",
-                  toolCallId,
-                  toolName: "updateHub",
-                  args: { hub },
-                },
-              ],
-            },
-            {
-              role: "tool",
-              content: [
-                {
-                  type: "tool-result",
-                  toolName: "updateHub",
-                  toolCallId,
-                  result: `The hub has been updated with the new values`,
-                },
-              ],
-            },
-          ]);
+          try {
+            const app = new FirecrawlApp({
+              apiKey: process.env.FIRECRAWL_API_KEY,
+            });
 
-          return <Message role="assistant" content={<HubView hub={hub} />} />;
-        },
-      },
-      viewUsage: {
-        description: "view current usage for electricity, water, or gas",
-        parameters: z.object({
-          type: z.enum(["electricity", "water", "gas"]),
-        }),
-        generate: async function* ({ type }) {
-          const toolCallId = generateId();
+            // Show loading state
+            yield (
+              <Message
+                role="assistant"
+                content={
+                  <div className="w-full max-w-6xl mx-auto p-4">
+                    <p>Scraping detailed information from: {url}</p>
+                    <div className="animate-pulse space-y-3 mt-2">
+                      <div className="h-4 bg-gray-200 rounded w-full"></div>
+                      <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                      <div className="h-4 bg-gray-200 rounded w-4/5"></div>
+                    </div>
+                  </div>
+                }
+              />
+            );
 
-          messages.done([
-            ...(messages.get() as CoreMessage[]),
-            {
-              role: "assistant",
-              content: [
-                {
-                  type: "tool-call",
-                  toolCallId,
-                  toolName: "viewUsage",
-                  args: { type },
-                },
-              ],
-            },
-            {
-              role: "tool",
-              content: [
-                {
-                  type: "tool-result",
-                  toolName: "viewUsage",
-                  toolCallId,
-                  result: `The current usage for ${type} is currently displayed on the screen`,
-                },
-              ],
-            },
-          ]);
+            const scrapeResult = await app.extract([url], {
+              prompt: `Extract detailed information about ${query} from this page, including financial data, news, and analysis.`,
+            });
 
-          return (
-            <Message role="assistant" content={<UsageView type={type} />} />
-          );
-        },
-      },
-      getStockInfo: {
-        description: "fetch and display current stock or ETF information",
-        parameters: z.object({
-          symbol: z.string().describe("stock or ETF symbol"),
-          timeframe: z.enum(["recent", "full", "historical"]).optional(),
-          month: z.string().optional(),
-        }),
-        generate: async function* ({ symbol, timeframe = "recent", month }) {
-          const toolCallId = generateId();
-          const stockData = await getStockData(symbol, timeframe, month);
+            console.log("Scrape Result:", JSON.stringify(scrapeResult));
 
-          messages.done([
-            ...(messages.get() as CoreMessage[]),
-            {
-              role: "assistant",
-              content: [
-                {
-                  type: "tool-call",
-                  toolCallId,
-                  toolName: "getStockInfo",
-                  args: { symbol, timeframe, month },
-                },
-              ],
-            },
-            {
-              role: "tool",
-              content: [
-                {
-                  type: "tool-result",
-                  toolName: "getStockInfo",
-                  toolCallId,
-                  result: stockData,
-                },
-              ],
-            },
-          ]);
+            if (!scrapeResult.success) {
+              throw new Error(scrapeResult.error);
+            }
 
-          return (
-            <Message
-              role="assistant"
-              content={<StockView data={stockData} symbol={symbol} />}
-            />
-          );
+            // Use the messages object from the parent scope
+            messages.done([
+              ...(messages.get() as CoreMessage[]),
+              {
+                role: "assistant",
+                content: [
+                  {
+                    type: "tool-call",
+                    toolCallId,
+                    toolName: "scrapeStockInfo",
+                    args: { url, query },
+                  },
+                ],
+              },
+              {
+                role: "tool",
+                content: [
+                  {
+                    type: "tool-result",
+                    toolName: "scrapeStockInfo",
+                    toolCallId,
+                    result: scrapeResult.data,
+                  },
+                ],
+              },
+            ]);
+
+            return (
+              <Message
+                role="assistant"
+                content={
+                  <div className="w-full max-w-5xl mx-auto px-4 space-y-8">
+                    <div className="pb-2">
+                      <h3 className="text-xs font-mono text-gray-500 tracking-wider">
+                        SOURCE:{" "}
+                        <span className="text-gray-700 font-medium">{url}</span>
+                      </h3>
+                    </div>
+
+                    {typeof scrapeResult.data === "string" ? (
+                      <div
+                        className="prose prose-sm max-w-none text-gray-800 font-light leading-relaxed"
+                        dangerouslySetInnerHTML={{
+                          __html: marked.parse(scrapeResult.data),
+                        }}
+                      />
+                    ) : (
+                      <div className="space-y-6">
+                        {Object.entries(scrapeResult.data).map(
+                          ([section, content]) => {
+                            if (Array.isArray(content) && content.length === 0)
+                              return null;
+
+                            return (
+                              <div
+                                key={section}
+                                className="bg-white rounded-xl shadow-xs border border-gray-100 overflow-hidden"
+                              >
+                                <div className="px-6 py-4 bg-gray-50 border-b border-gray-100">
+                                  <h3 className="text-sm font-medium text-gray-700 tracking-wider uppercase">
+                                    {section.replace(/([A-Z])/g, " $1").trim()}
+                                  </h3>
+                                </div>
+
+                                <div className="divide-y divide-gray-100">
+                                  {Array.isArray(content) ? (
+                                    content.map((item, index) => (
+                                      <div
+                                        key={index}
+                                        className="p-6 hover:bg-gray-50 transition-colors duration-150"
+                                      >
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                          {Object.entries(item).map(
+                                            ([key, value]) => (
+                                              <div
+                                                key={key}
+                                                className="space-y-1"
+                                              >
+                                                <span className="block text-xs font-light text-gray-500 tracking-wider">
+                                                  {key
+                                                    .replace(/([A-Z])/g, " $1")
+                                                    .trim()}
+                                                </span>
+                                                <span className="block text-sm text-gray-800 font-normal">
+                                                  {value === null ? (
+                                                    <span className="text-gray-300">
+                                                      —
+                                                    </span>
+                                                  ) : (
+                                                    String(value)
+                                                  )}
+                                                </span>
+                                              </div>
+                                            )
+                                          )}
+                                        </div>
+                                      </div>
+                                    ))
+                                  ) : typeof content === "object" &&
+                                    content !== null ? (
+                                    <div className="p-6">
+                                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        {Object.entries(content).map(
+                                          ([key, value]) => (
+                                            <div
+                                              key={key}
+                                              className="space-y-1"
+                                            >
+                                              <span className="block text-xs font-light text-gray-500 tracking-wider">
+                                                {key
+                                                  .replace(/([A-Z])/g, " $1")
+                                                  .trim()}
+                                              </span>
+                                              <span className="block text-sm text-gray-800 font-normal">
+                                                {value === null ? (
+                                                  <span className="text-gray-300">
+                                                    —
+                                                  </span>
+                                                ) : (
+                                                  String(value)
+                                                )}
+                                              </span>
+                                            </div>
+                                          )
+                                        )}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="p-6">
+                                      <p className="text-sm text-gray-800 font-light">
+                                        {String(content)}
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          }
+                        )}
+                      </div>
+                    )}
+                  </div>
+                }
+              />
+            );
+          } catch (error: any) {
+            console.error("Scraping error:", error);
+            return (
+              <Message
+                role="assistant"
+                content={`Failed to scrape detailed information from the URL: ${error.message}`}
+              />
+            );
+          }
         },
       },
       listIndianStocks: {
@@ -855,35 +851,37 @@ const sendMessage = async (message: string) => {
         }),
         generate: async function* ({ symbol }) {
           const toolCallId = generateId();
-          
+
           // Show loading state for Indian stocks
-          yield <Message 
-            role="assistant" 
-            content={
-              <div className="w-full max-w-6xl mx-auto p-4">
-                <h2 className="text-xl font-semibold mb-4">Indian Markets</h2>
-                <div className="border rounded-lg p-4">
-                  <div className="animate-pulse space-y-4">
-                    <div className="h-6 bg-gray-200 rounded w-1/3"></div>
-                    <div className="flex space-x-4">
-                      <div className="flex-1 space-y-3">
-                        <div className="h-4 bg-gray-200 rounded"></div>
-                        <div className="h-4 bg-gray-200 rounded"></div>
-                        <div className="h-4 bg-gray-200 rounded"></div>
+          yield (
+            <Message
+              role="assistant"
+              content={
+                <div className="w-full max-w-6xl mx-auto p-4">
+                  <h2 className="text-xl font-semibold mb-4">Indian Markets</h2>
+                  <div className="border rounded-lg p-4">
+                    <div className="animate-pulse space-y-4">
+                      <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+                      <div className="flex space-x-4">
+                        <div className="flex-1 space-y-3">
+                          <div className="h-4 bg-gray-200 rounded"></div>
+                          <div className="h-4 bg-gray-200 rounded"></div>
+                          <div className="h-4 bg-gray-200 rounded"></div>
+                        </div>
+                        <div className="flex-1 space-y-3">
+                          <div className="h-4 bg-gray-200 rounded"></div>
+                          <div className="h-4 bg-gray-200 rounded"></div>
+                          <div className="h-4 bg-gray-200 rounded"></div>
+                        </div>
                       </div>
-                      <div className="flex-1 space-y-3">
-                        <div className="h-4 bg-gray-200 rounded"></div>
-                        <div className="h-4 bg-gray-200 rounded"></div>
-                        <div className="h-4 bg-gray-200 rounded"></div>
-                      </div>
+                      <div className="h-24 bg-gray-200 rounded"></div>
                     </div>
-                    <div className="h-24 bg-gray-200 rounded"></div>
                   </div>
                 </div>
-              </div>
-            }
-          />;
-          
+              }
+            />
+          );
+
           const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
           const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&outputsize=compact&apikey=${apiKey}`;
           const response = await fetch(url);
