@@ -589,6 +589,479 @@ const sendMessage = async (message: string) => {
           }
         },
       },
+      getCurrentMarketOverview: {
+        description: "get current market overview and analysis",
+        parameters: z.object({}),
+        generate: async function* () {
+          const toolCallId = generateId();
+
+          // Step 1: Show initial loading state with skeletons for all sections
+          yield (
+            <Message
+              role="assistant"
+              content={
+                <div className="w-full max-w-7xl mx-auto p-4">
+                  <h2 className="text-xl font-semibold mb-4">
+                    Fetching Market Overview
+                  </h2>
+
+                  {/* AI Analysis Section Loading */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <h3 className="text-lg font-medium mb-4">Analysis</h3>
+                    <div className="animate-pulse space-y-3">
+                      <div className="h-4 bg-gray-200 rounded w-full"></div>
+                      <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                      <div className="h-4 bg-gray-200 rounded w-4/5"></div>
+                      <div className="h-4 bg-gray-200 rounded w-full"></div>
+                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                    </div>
+                  </div>
+
+                  {/* Market Indices Section Loading */}
+                  <div className="border rounded-lg p-4 mb-6">
+                    <h3 className="text-lg font-medium mb-2">Market Indices</h3>
+                    <div className="animate-pulse">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {[...Array(4)].map((_, index) => (
+                          <div key={index} className="space-y-2">
+                            <div className="h-5 bg-gray-200 rounded w-24"></div>
+                            <div className="h-6 bg-gray-200 rounded w-20"></div>
+                            <div className="h-4 bg-gray-200 rounded w-16"></div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Market News Loading */}
+                  <div className="mb-6">
+                    <h3 className="text-lg font-medium mb-2">
+                      Latest Market News
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {[...Array(4)].map((_, index) => (
+                        <div key={index} className="border rounded-lg p-4 flex">
+                          <div className="mr-3 flex-shrink-0">
+                            <div className="animate-pulse bg-gray-200 w-20 h-20 rounded"></div>
+                          </div>
+                          <div className="flex-grow">
+                            <div className="animate-pulse space-y-2">
+                              <div className="h-4 bg-gray-200 rounded w-full"></div>
+                              <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                              <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Market Insights Loading */}
+                  <div>
+                    <h3 className="text-lg font-medium mb-2">
+                      Market Insights
+                    </h3>
+                    <div className="space-y-4">
+                      {[...Array(3)].map((_, index) => (
+                        <div key={index} className="border rounded-lg p-4">
+                          <div className="animate-pulse space-y-3">
+                            <div className="h-5 bg-gray-200 rounded w-3/4"></div>
+                            <div className="h-4 bg-gray-200 rounded w-full"></div>
+                            <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                            <div className="flex justify-between items-center mt-2">
+                              <div className="h-3 bg-gray-200 rounded w-24"></div>
+                              <div className="h-3 bg-gray-200 rounded w-32"></div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              }
+            />
+          );
+
+          try {
+            // Step 2: Search for the market information
+            const searchParams = {
+              api_key: process.env.SERPAPI_KEY,
+              engine: "google",
+              q: "current stock market overview today major indices market news",
+              num: 10,
+            };
+
+            // Show loading state with SERP API in progress
+            yield (
+              <Message
+                role="assistant"
+                content={
+                  <div className="w-full max-w-7xl mx-auto p-4">
+                    <h2 className="text-xl font-semibold mb-4">
+                      Searching for market data...
+                    </h2>
+
+                    {/* AI Analysis Section Loading */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                      <h3 className="text-lg font-medium mb-4">Analysis</h3>
+                      <div className="animate-pulse space-y-3">
+                        <div className="h-4 bg-gray-200 rounded w-full"></div>
+                        <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                        <div className="h-4 bg-gray-200 rounded w-4/5"></div>
+                        <div className="h-4 bg-gray-200 rounded w-full"></div>
+                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                      </div>
+                    </div>
+
+                    {/* Market Indices Section Loading */}
+                    <div className="border rounded-lg p-4 mb-6">
+                      <h3 className="text-lg font-medium mb-2">
+                        Market Indices
+                      </h3>
+                      <div className="animate-pulse">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          {[...Array(4)].map((_, index) => (
+                            <div key={index} className="space-y-2">
+                              <div className="h-5 bg-gray-200 rounded w-24"></div>
+                              <div className="h-6 bg-gray-200 rounded w-20"></div>
+                              <div className="h-4 bg-gray-200 rounded w-16"></div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Market News Loading */}
+                    <div className="mb-6">
+                      <h3 className="text-lg font-medium mb-2">
+                        Latest Market News
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {[...Array(4)].map((_, index) => (
+                          <div
+                            key={index}
+                            className="border rounded-lg p-4 flex"
+                          >
+                            <div className="mr-3 flex-shrink-0">
+                              <div className="animate-pulse bg-gray-200 w-20 h-20 rounded"></div>
+                            </div>
+                            <div className="flex-grow">
+                              <div className="animate-pulse space-y-2">
+                                <div className="h-4 bg-gray-200 rounded w-full"></div>
+                                <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                                <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Market Insights Loading */}
+                    <div>
+                      <h3 className="text-lg font-medium mb-2">
+                        Market Insights
+                      </h3>
+                      <div className="space-y-4">
+                        {[...Array(3)].map((_, index) => (
+                          <div key={index} className="border rounded-lg p-4">
+                            <div className="animate-pulse space-y-3">
+                              <div className="h-5 bg-gray-200 rounded w-3/4"></div>
+                              <div className="h-4 bg-gray-200 rounded w-full"></div>
+                              <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                              <div className="flex justify-between items-center mt-2">
+                                <div className="h-3 bg-gray-200 rounded w-24"></div>
+                                <div className="h-3 bg-gray-200 rounded w-32"></div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                }
+              />
+            );
+
+            const response = await getJson(searchParams);
+            console.log("SERP API Response:", response);
+
+            // Show loading state with SERP API complete but OpenAI analysis in progress
+            yield (
+              <Message
+                role="assistant"
+                content={
+                  <div className="w-full max-w-7xl mx-auto p-4">
+                    <h2 className="text-xl font-semibold mb-4">
+                      Market Overview
+                    </h2>
+
+                    {/* AI Analysis Section Loading */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                      <h3 className="text-lg font-medium mb-4">Analysis</h3>
+                      <div className="animate-pulse space-y-3">
+                        <div className="h-4 bg-gray-200 rounded w-full"></div>
+                        <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                        <div className="h-4 bg-gray-200 rounded w-4/5"></div>
+                        <div className="h-4 bg-gray-200 rounded w-full"></div>
+                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                      </div>
+                      <div className="text-sm text-blue-500 mt-3">
+                        Analyzing market data...
+                      </div>
+                    </div>
+
+                    {/* Top Stories Section - Real Data */}
+                    {response.top_stories &&
+                      response.top_stories.length > 0 && (
+                        <div className="mb-6">
+                          <h3 className="text-lg font-medium mb-4">
+                            Latest Market News
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {response.top_stories
+                              .slice(0, 6)
+                              .map((story: any, index: number) => (
+                                <div
+                                  key={index}
+                                  className="border rounded-lg p-4"
+                                >
+                                  <h4 className="font-medium text-sm mb-2">
+                                    {story.title}
+                                  </h4>
+                                  <div className="flex items-center justify-between text-xs text-gray-500">
+                                    <span>{story.source}</span>
+                                    <span>{story.date}</span>
+                                  </div>
+                                  <a
+                                    href={story.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-500 text-xs hover:underline mt-2 inline-block"
+                                  >
+                                    Read more
+                                  </a>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+
+                    {/* Organic Results Section - Real Data */}
+                    {response.organic_results &&
+                      response.organic_results.length > 0 && (
+                        <div>
+                          <h3 className="text-lg font-medium mb-2">
+                            Market Insights
+                          </h3>
+                          <div className="space-y-4">
+                            {response.organic_results
+                              .slice(0, 3)
+                              .map((result: any, index: number) => (
+                                <div
+                                  key={index}
+                                  className="border rounded-lg p-4"
+                                >
+                                  <h4 className="font-medium mb-2">
+                                    {result.title}
+                                  </h4>
+                                  <p className="text-sm text-gray-600 mb-2">
+                                    {result.snippet}
+                                  </p>
+                                  <div className="flex justify-between items-center">
+                                    <a
+                                      href={result.link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-500 text-sm hover:underline"
+                                    >
+                                      Read more
+                                    </a>
+                                    <span className="text-xs text-gray-500">
+                                      {result.displayed_link}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+                  </div>
+                }
+              />
+            );
+
+            // Send the extracted data to OpenAI for analysis
+            const openaiResponse = await fetch(
+              "https://api.openai.com/v1/chat/completions",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+                },
+                body: JSON.stringify({
+                  model: "gpt-4-turbo",
+                  messages: [
+                    {
+                      role: "system",
+                      content:
+                        "You are a financial analyst providing concise market overviews. Focus on key market movements, trends, and their causes.",
+                    },
+                    {
+                      role: "user",
+                      content: `Provide a brief market overview based on this data: ${JSON.stringify(
+                        response
+                      )}`,
+                    },
+                  ],
+                  temperature: 0.3,
+                  max_tokens: 400,
+                }),
+              }
+            );
+
+            const openaiData = await openaiResponse.json();
+            const analysis = openaiData.choices[0].message.content;
+
+            messages.done([
+              ...(messages.get() as CoreMessage[]),
+              {
+                role: "assistant",
+                content: [
+                  {
+                    type: "tool-call",
+                    toolCallId,
+                    toolName: "getCurrentMarketOverview",
+                    args: {},
+                  },
+                ],
+              },
+              {
+                role: "tool",
+                content: [
+                  {
+                    type: "tool-result",
+                    toolName: "getCurrentMarketOverview",
+                    toolCallId,
+                    result: {
+                      serpResponse: response,
+                      openaiAnalysis: analysis,
+                    },
+                  },
+                ],
+              },
+            ]);
+
+            return (
+              <Message
+                role="assistant"
+                content={
+                  <div className="w-full max-w-7xl mx-auto p-4">
+                    <h2 className="text-xl font-semibold mb-6">
+                      Market Overview
+                    </h2>
+
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6 prose prose-blue max-w-none">
+                      <div
+                        className="text-gray-800"
+                        dangerouslySetInnerHTML={{
+                          __html: marked.parse(analysis || ""),
+                        }}
+                      />
+                    </div>
+
+                    {response.top_stories && (
+                      <div className="mb-6">
+                        <h3 className="text-lg font-medium mb-4">
+                          Latest Market News
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {response.top_stories
+                            .slice(0, 6)
+                            .map((story: any, index: number) => (
+                              <div
+                                key={index}
+                                className="border rounded-lg p-4"
+                              >
+                                <h4 className="font-medium text-sm mb-2">
+                                  {story.title}
+                                </h4>
+                                <div className="flex items-center justify-between text-xs text-gray-500">
+                                  <span>{story.source}</span>
+                                  <span>{story.date}</span>
+                                </div>
+                                <a
+                                  href={story.link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-500 text-xs hover:underline mt-2 inline-block"
+                                >
+                                  Read more
+                                </a>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {response.organic_results && (
+                      <div>
+                        <h3 className="text-lg font-medium mb-4">
+                          Market Insights
+                        </h3>
+                        <div className="space-y-4">
+                          {response.organic_results
+                            .slice(0, 3)
+                            .map((result: any, index: number) => (
+                              <div
+                                key={index}
+                                className="border rounded-lg p-4"
+                              >
+                                <h4 className="font-medium mb-2">
+                                  {result.title}
+                                </h4>
+                                <p className="text-sm text-gray-600 mb-2">
+                                  {result.snippet}
+                                </p>
+                                <div className="flex justify-between items-center">
+                                  <a
+                                    href={result.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-500 text-sm hover:underline"
+                                  >
+                                    Read more
+                                  </a>
+                                  <span className="text-xs text-gray-500">
+                                    {result.displayed_link}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                }
+              />
+            );
+          } catch (error) {
+            console.error("Error fetching market overview:", error);
+            return (
+              <Message
+                role="assistant"
+                content={
+                  <div className="text-red-500">
+                    Sorry, I couldn't fetch the market overview at this moment.
+                    Please try again later.
+                  </div>
+                }
+              />
+            );
+          }
+        },
+      },
       listStocks: {
         description: "list all available stocks and ETFs",
         parameters: z.object({}),
