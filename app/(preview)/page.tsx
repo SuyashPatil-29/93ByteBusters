@@ -62,21 +62,29 @@ export default function Home() {
                   <MasonryIcon />
                 </p>
                 <p>
-                  The streamUI function allows you to stream React Server
-                  Components along with your language model generations to
-                  integrate dynamic user interfaces into your application.
+                  Welcome to your AI Financial Advisor! I can help you track market movements,
+                  analyze stock performance, and provide real-time financial insights. Ask me about
+                  US stocks, Indian markets, ETFs, or get the latest market news.
                 </p>
                 <p>
-                  {" "}
-                  Learn more about the{" "}
+                  Try the suggested actions below or ask me anything about:
+                  <ul className="mt-2 ml-4 list-disc">
+                    <li>Stock price analysis and trends</li>
+                    <li>Market news and updates</li>
+                    <li>ETF performance tracking</li>
+                    <li>Indian stock market data</li>
+                  </ul>
+                </p>
+                <p className="text-xs mt-2">
+                  Powered by{" "}
                   <Link
                     className="text-blue-500 dark:text-blue-400"
-                    href="https://sdk.vercel.ai/docs/ai-sdk-rsc/streaming-react-components"
+                    href="https://sdk.vercel.ai"
                     target="_blank"
                   >
-                    streamUI{" "}
+                    Vercel AI
                   </Link>
-                  hook from Vercel AI SDK.
+                  {" "}and advanced market data APIs
                 </p>
               </div>
             </motion.div>

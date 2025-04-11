@@ -10,9 +10,6 @@ import {
 } from "ai/rsc";
 import { ReactNode } from "react";
 import { z } from "zod";
-import { CameraView } from "@/components/camera-view";
-import { StockData } from "@/services/alpha-vantage";
-import { StockView } from "@/components/stock-view";
 import { StockList } from "@/components/stock-list";
 import StockDataDisplay from "@/components/indian-stock-view";
 import { marked } from "marked";
