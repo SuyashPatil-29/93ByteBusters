@@ -39,8 +39,10 @@ cd quantum-hacks-2025
 npm install
 ```
 
-├── app/                  # Next.js app directory
-├── components/          # React components
-├── lib/                 # Utility functions
-├── public/             # Static assets
-└── services/           # External service integrations
+## Project Structure
+
+- `app/` - Next.js app directory
+- `components/` - React components
+- `lib/` - Utility functions
+- `public/` - Static assets
+- `services/` - External service integrations

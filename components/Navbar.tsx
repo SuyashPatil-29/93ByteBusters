@@ -31,7 +31,7 @@ const Navbar = () => {
               "flex gap-0 z-40 font-semibold bg-transparent shadow-none hover:bg-transparent text-black text-lg"
             )}
           >
-            News<span className="text-green-600 text-lg">Sense</span>
+            News<span className="text-blue-600 text-lg">Sense</span>
           </Button>
           <div className="h-full flex items-center space-x-6">
             <button
