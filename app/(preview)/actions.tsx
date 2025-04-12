@@ -46,15 +46,16 @@ const sendMessage = async (message: string) => {
     model: openai("gpt-4o"),
     // In the sendMessage function, modify the system prompt:
     system: `\
-  - you are a financial advisor assistant
-  - help explain market movements and fund performance
-  - use available tools to fetch and display stock data
-  - support different timeframes: recent (default), full (30 days), or historical (specific month)
-  - when users ask about stock recommendations or whether to buy/sell, use getStockRecommendation tool
-  - provide context and explanation for the recommendation trends
-  - reply in clear, concise language
-  - when user says "yes" after stock news results, automatically call scrapeStockInfo with the first available URL
-`,
+    - you are a financial advisor assistant
+    - help explain market movements and fund performance
+    - use available tools to fetch and display stock data
+    - support different timeframes: recent (default), full (30 days), or historical (specific month)
+    - when users ask about stock recommendations or whether to buy/sell, use getStockRecommendation tool
+    - provide context and explanation for the recommendation trends
+    - reply in clear, concise language
+    - when user says a number after news results, call scrapeStockInfo with the corresponding article URL
+    - present numbered options for users to choose which article to analyze in detail
+  `,
     messages: messages.get() as CoreMessage[],
     text: async function* ({ content, done }) {
       if (done) {
@@ -570,16 +571,51 @@ const sendMessage = async (message: string) => {
                   content={
                     <div className="w-full max-w-7xl mx-auto">
                       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                        <p className="font-medium">
-                          Would you like me to scrape detailed information from
-                          the first news article?
+                        <p className="font-medium mb-3">
+                          Which article would you like me to analyze in detail?
                         </p>
-                        <p className="mt-2 text-sm text-gray-600">
-                          Just reply &quot;yes&quot; and I&quot;ll extract the full content
-                          from:{" "}
-                          {response.top_stories?.[0]?.link ||
-                            response.organic_results?.[0]?.link ||
-                            "the first available source"}
+                        <div className="space-y-2">
+                          {response.top_stories?.map(
+                            (story: any, index: number) => (
+                              <div key={index} className="flex items-start">
+                                <span className="font-medium mr-2">
+                                  {index + 1}.
+                                </span>
+                                <div>
+                                  <p className="text-sm text-gray-800">
+                                    {story.title}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {story.source}
+                                  </p>
+                                </div>
+                              </div>
+                            )
+                          )}
+                          {response.organic_results?.map(
+                            (result: any, index: number) => (
+                              <div key={index} className="flex items-start">
+                                <span className="font-medium mr-2">
+                                  {(response.top_stories?.length || 0) +
+                                    index +
+                                    1}
+                                  .
+                                </span>
+                                <div>
+                                  <p className="text-sm text-gray-800">
+                                    {result.title}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {result.displayed_link}
+                                  </p>
+                                </div>
+                              </div>
+                            )
+                          )}
+                        </div>
+                        <p className="mt-4 text-sm text-gray-600">
+                          Just reply with the number of the article you&apos;d like
+                          me to analyze in detail.
                         </p>
                       </div>
                     </div>
@@ -1062,8 +1098,8 @@ const sendMessage = async (message: string) => {
                 role="assistant"
                 content={
                   <div className="text-red-500">
-                    Sorry, I couldn&quot;t fetch the market overview at this moment.
-                    Please try again later.
+                    Sorry, I couldn&quot;t fetch the market overview at this
+                    moment. Please try again later.
                   </div>
                 }
               />
@@ -1175,8 +1211,8 @@ const sendMessage = async (message: string) => {
                         recommendation based on current market trends and
                         analyst opinions.
                         <div className="mt-2 text-sm text-gray-500">
-                          Just say &quot;Yes&quot; and I&quot;ll analyze {tickerSymbol} in
-                          detail for you.
+                          Just say &quot;Yes&quot; and I&quot;ll analyze{" "}
+                          {tickerSymbol} in detail for you.
                         </div>
                       </div>
                     </div>
@@ -1807,8 +1843,9 @@ const sendMessage = async (message: string) => {
                 role="assistant"
                 content={
                   <div className="text-red-500">
-                    Sorry, I couldn&quot;t fetch the recommendation data for {symbol}
-                    . Please check if the symbol is correct or try again later.
+                    Sorry, I couldn&quot;t fetch the recommendation data for{" "}
+                    {symbol}. Please check if the symbol is correct or try again
+                    later.
                   </div>
                 }
               />

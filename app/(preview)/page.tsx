@@ -6,6 +6,8 @@ import { Message } from "@/components/message";
 import { useScrollToBottom } from "@/components/use-scroll-to-bottom";
 import { motion } from "framer-motion";
 
+export const maxDuration = 59;
+
 export default function Home() {
   const { sendMessage } = useActions();
 
@@ -25,13 +27,13 @@ export default function Home() {
     },
     {
       title: "Show",
-      label: "RELIANCE stock data",
-      action: "Show me a chart of Reliance stock data",
+      label: "TCS stock data",
+      action: "Show me a chart of TCS stock data",
     },
     {
       title: "Show me",
-      label: "tech AXIS BANK ETF performance",
-      action: "Show tech ETF performance",
+      label: "AXIS BANK ETF performance",
+      action: "Show ETF performance for AXISVALUE",
     },
     {
       title: "Recommend",
