@@ -1,42 +1,46 @@
-# Generative UI with React Server Components and Vercel AI SDK
+# NewsSense - Financial Market Analysis Platform
 
-> **Note**: Development of AI SDK RSC is currently paused. For more information, see [Migrating from AI SDK RSC](https://sdk.vercel.ai/docs/ai-sdk-rsc/migrating-to-ui#background).
+NewsSense is a real-time financial market analysis platform that connects fund performance with real-world events and news to explain market movements. It provides intelligent insights for ETFs, mutual funds, and market trends.
 
-This example demonstrates how to use the [Vercel AI SDK](https://sdk.vercel.ai/docs) with [Next.js](https://nextjs.org/) and the `streamUI` function to create generative user interfaces by streaming React Server Components to the client.
+## Features
 
-## Deploy your own
+### 🚀 Core Capabilities
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel-labs%2Fai-sdk-preview-rsc-genui&env=OPENAI_API_KEY&envDescription=API%20keys%20needed%20for%20application&envLink=platform.openai.com)
+- **Real-time Market Data**: Track live stock prices and market movements
+- **Smart Analysis**: AI-powered explanations for market trends
+- **Indian Markets Focus**: Dedicated tracking for NSE and BSE stocks
+- **ETF Analysis**: Comprehensive ETF performance tracking
+- **News Integration**: Real-time correlation between news events and market movements
 
-## How to use
+### 💡 Key Components
 
-Run [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app) with [npm](https://docs.npmjs.com/cli/init), [Yarn](https://yarnpkg.com/lang/en/docs/cli/create/), or [pnpm](https://pnpm.io) to bootstrap the example:
+- **Stock Analysis**: Detailed price trends and performance metrics
+- **Market Overview**: Comprehensive market insights and current status
+- **ETF Tracking**: Fund performance and holdings analysis
+- **Indian Markets**: Specialized NSE and BSE data analysis
+
+## Tech Stack
+
+- **Frontend**: Next.js 14 with React 18
+- **Styling**: Tailwind CSS with custom animations
+- **Data Visualization**: D3.js, Recharts
+- **Motion**: Framer Motion for smooth transitions
+- **AI Integration**: Vercel AI SDK
+- **API Integration**: Alpha Vantage for market data
+
+## Getting Started
+
+1. Clone the repository:
 
 ```bash
-npx create-next-app --example https://github.com/vercel-labs/ai-sdk-preview-rsc-genui ai-sdk-preview-rsc-genui-example
+git clone https://github.com/SuyashPatil-29/quantum-hacks-25.git
+
+cd quantum-hacks-2025
+npm install
 ```
 
-```bash
-yarn create next-app --example https://github.com/vercel-labs/ai-sdk-preview-rsc-genui ai-sdk-preview-rsc-genui-example
-```
-
-```bash
-pnpm create next-app --example https://github.com/vercel-labs/ai-sdk-preview-rsc-genui ai-sdk-preview-rsc-genui-example
-```
-
-To run the example locally you need to:
-
-1. Sign up for accounts with the AI providers you want to use (e.g., OpenAI, Anthropic).
-2. Obtain API keys for each provider.
-3. Set the required environment variables as shown in the `.env.example` file, but in a new file called `.env`.
-4. `npm install` to install the required dependencies.
-5. `npm run dev` to launch the development server.
-
-
-## Learn More
-
-To learn more about Vercel AI SDK or Next.js take a look at the following resources:
-
-- [Vercel AI SDK docs](https://sdk.vercel.ai/docs)
-- [Vercel AI Playground](https://play.vercel.ai)
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+├── app/                  # Next.js app directory
+├── components/          # React components
+├── lib/                 # Utility functions
+├── public/             # Static assets
+└── services/           # External service integrations
