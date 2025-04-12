@@ -5,9 +5,8 @@ import { AI } from "./actions";
 import Navbar from "@/components/Navbar";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://ai-sdk-preview-rsc-genui.vercel.dev"),
-  title: "Generative User Interfaces Preview",
-  description: "Generative UI with React Server Components and Vercel AI SDK",
+  title: "NewsSense",
+  description: "NewsSense is a real-time financial market analysis platform that connects fund performance with real-world events and news to explain market movements. It provides intelligent insights for ETFs, mutual funds, and market trends.",
 };
 
 export default function RootLayout({
