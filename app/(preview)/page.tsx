@@ -34,9 +34,9 @@ export default function Home() {
       action: "Show tech ETF performance",
     },
     {
-      title: "Get ETH",
-      label: "equity data by symbol",
-      action: "Get NSE equity data for symbol: ",
+      title: "Recommend",
+      label: "if i should buy or sell a stock",
+      action: "Recommend me if i should buy or sell a stock",
     },
     {
       title: "Recommendations",

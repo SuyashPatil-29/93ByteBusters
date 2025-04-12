@@ -16,6 +16,12 @@ import { marked } from "marked";
 import FirecrawlApp from "@mendable/firecrawl-js";
 import axios from "axios";
 import StockList from "@/components/stock-list";
+import dynamic from "next/dynamic";
+
+const RecommendationTrend = dynamic(
+  () => import("@/components/GetRecommendationTrend"),
+  { ssr: false }
+);
 
 export interface Hub {
   climate: Record<"low" | "high", number>;
@@ -40,13 +46,15 @@ const sendMessage = async (message: string) => {
     model: openai("gpt-4o"),
     // In the sendMessage function, modify the system prompt:
     system: `\
-      - you are a financial advisor assistant
-      - help explain market movements and fund performance
-      - use available tools to fetch and display stock data
-      - support different timeframes: recent (default), full (30 days), or historical (specific month)
-      - reply in clear, concise language
-      - when user says "yes" after stock news results, automatically call scrapeStockInfo with the first available URL
-    `,
+  - you are a financial advisor assistant
+  - help explain market movements and fund performance
+  - use available tools to fetch and display stock data
+  - support different timeframes: recent (default), full (30 days), or historical (specific month)
+  - when users ask about stock recommendations or whether to buy/sell, use getStockRecommendation tool
+  - provide context and explanation for the recommendation trends
+  - reply in clear, concise language
+  - when user says "yes" after stock news results, automatically call scrapeStockInfo with the first available URL
+`,
     messages: messages.get() as CoreMessage[],
     text: async function* ({ content, done }) {
       if (done) {
@@ -1064,12 +1072,45 @@ const sendMessage = async (message: string) => {
         },
       },
       listStocks: {
-        description: "Get stock recommendations for a given company.",
+        description:
+          "Get similar stocks and recommendations for a given company.",
         parameters: z.object({
           tickerSymbol: z.string().describe("The company or stock name."),
         }),
         generate: async function* ({ tickerSymbol }) {
           const toolCallId = generateId();
+
+          yield (
+            <Message
+              role="assistant"
+              content={
+                <div className="w-full max-w-7xl mx-auto">
+                  <h2 className="text-xl font-semibold mb-4">
+                    Finding Similar Stocks to {tickerSymbol}
+                  </h2>
+                  <div className="border rounded-lg p-6">
+                    <div className="animate-pulse space-y-6">
+                      {/* Similar Stocks Loading Skeleton */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {[...Array(6)].map((_, index) => (
+                          <div key={index} className="border rounded-lg p-4">
+                            <div className="space-y-3">
+                              <div className="h-5 bg-gray-200 rounded w-3/4"></div>
+                              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                              <div className="flex justify-between items-center mt-2">
+                                <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                                <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              }
+            />
+          );
 
           // Append .NS for NSE stocks
           const formattedSymbol = tickerSymbol.includes(".")
@@ -1120,14 +1161,28 @@ const sendMessage = async (message: string) => {
             ]);
 
             return (
-              <Message
-                role="assistant"
-                content={
-                  <div className="w-full max-w-7xl mx-auto">
-                    <StockList data={data} />
-                  </div>
-                }
-              />
+              <>
+                <Message
+                  role="assistant"
+                  content={
+                    <div>
+                      <div className="w-full max-w-7xl mx-auto">
+                        <StockList data={data} />
+                      </div>
+                      <div className="mt-6 text-gray-700">
+                        Would you like me to analyze if this stock is a good buy
+                        or sell opportunity right now? I can provide a detailed
+                        recommendation based on current market trends and
+                        analyst opinions.
+                        <div className="mt-2 text-sm text-gray-500">
+                          Just say "Yes" and I'll analyze {tickerSymbol} in
+                          detail for you.
+                        </div>
+                      </div>
+                    </div>
+                  }
+                />
+              </>
             );
           } catch (error) {
             console.error("Error fetching stock recommendations:", error);
@@ -1626,6 +1681,134 @@ const sendMessage = async (message: string) => {
                   <div className="text-red-500">
                     Error fetching stock data. Please ensure you're using a
                     valid symbol (e.g., RELIANCE.NS, TCS.NS)
+                  </div>
+                }
+              />
+            );
+          }
+        },
+      },
+      getStockRecommendation: {
+        description: "get analyst recommendations and trend data for a stock",
+        parameters: z.object({
+          symbol: z
+            .string()
+            .describe("stock symbol to get recommendations for"),
+        }),
+        generate: async function* ({ symbol }, { toolName, toolCallId }) {
+          try {
+            // Initial loading state
+            yield (
+              <Message
+                role="assistant"
+                content={
+                  <div className="w-full max-w-4xl mx-auto">
+                    <div className="w-full max-w-4xl mx-auto">
+                      <div className="bg-white rounded-lg shadow-md p-6">
+                        <h2 className="text-2xl font-bold mb-6 text-gray-800">
+                          Loading Analyst Recommendations
+                        </h2>
+                        <div className="animate-pulse">
+                          {/* Summary section skeleton */}
+                          <div className="mb-8 bg-gray-50 p-4 rounded-md">
+                            <div className="flex justify-between items-center">
+                              <div className="space-y-3">
+                                <div className="h-6 bg-gray-200 rounded w-48"></div>
+                                <div className="h-4 bg-gray-200 rounded w-32"></div>
+                              </div>
+                              <div className="flex gap-4">
+                                {[...Array(5)].map((_, i) => (
+                                  <div key={i} className="text-center">
+                                    <div className="h-8 w-12 bg-gray-200 rounded mb-1"></div>
+                                    <div className="h-4 w-16 bg-gray-200 rounded"></div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Chart skeleton */}
+                          <div className="h-64 bg-gray-50 rounded-md"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                }
+              />
+            );
+
+            const options = {
+              method: "GET",
+              url: "https://apidojo-yahoo-finance-v1.p.rapidapi.com/stock/get-recommendation-trend",
+              params: {
+                symbol: symbol.toUpperCase(),
+                region: "US",
+                lang: "en-US",
+              },
+              headers: {
+                "X-RapidAPI-Key": process.env.RAPID_API_KEY,
+                "X-RapidAPI-Host": "apidojo-yahoo-finance-v1.p.rapidapi.com",
+              },
+            };
+
+            const response = await axios.request(options);
+
+            if (!response.data) {
+              throw new Error("No data received from API");
+            }
+
+            // Update messages state
+            messages.done([
+              ...(messages.get() as CoreMessage[]),
+              {
+                role: "assistant",
+                content: [
+                  {
+                    type: "tool-call",
+                    toolCallId,
+                    toolName,
+                    args: { symbol },
+                  },
+                ],
+              },
+              {
+                role: "tool",
+                content: [
+                  {
+                    type: "tool-result",
+                    toolName,
+                    toolCallId,
+                    result: response.data,
+                  },
+                ],
+              },
+            ]);
+
+            // Return final result
+            return (
+              <Message
+                role="assistant"
+                content={
+                  <div>
+                    <RecommendationTrend data={response.data} />
+                    <p className="mt-4 text-sm text-gray-600">
+                      Would you like me to analyze any specific aspects of these
+                      recommendations?
+                    </p>
+                  </div>
+                }
+              />
+            );
+          } catch (error) {
+            console.error("Error fetching recommendation data:", error);
+
+            return (
+              <Message
+                role="assistant"
+                content={
+                  <div className="text-red-500">
+                    Sorry, I couldn't fetch the recommendation data for {symbol}
+                    . Please check if the symbol is correct or try again later.
                   </div>
                 }
               />
