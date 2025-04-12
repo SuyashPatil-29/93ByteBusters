@@ -575,7 +575,7 @@ const sendMessage = async (message: string) => {
                           the first news article?
                         </p>
                         <p className="mt-2 text-sm text-gray-600">
-                          Just reply "yes" and I'll extract the full content
+                          Just reply &quot;yes&quot; and I&quot;ll extract the full content
                           from:{" "}
                           {response.top_stories?.[0]?.link ||
                             response.organic_results?.[0]?.link ||
@@ -1062,7 +1062,7 @@ const sendMessage = async (message: string) => {
                 role="assistant"
                 content={
                   <div className="text-red-500">
-                    Sorry, I couldn't fetch the market overview at this moment.
+                    Sorry, I couldn&quot;t fetch the market overview at this moment.
                     Please try again later.
                   </div>
                 }
@@ -1175,7 +1175,7 @@ const sendMessage = async (message: string) => {
                         recommendation based on current market trends and
                         analyst opinions.
                         <div className="mt-2 text-sm text-gray-500">
-                          Just say "Yes" and I'll analyze {tickerSymbol} in
+                          Just say &quot;Yes&quot; and I&quot;ll analyze {tickerSymbol} in
                           detail for you.
                         </div>
                       </div>
@@ -1679,7 +1679,7 @@ const sendMessage = async (message: string) => {
                 role="assistant"
                 content={
                   <div className="text-red-500">
-                    Error fetching stock data. Please ensure you're using a
+                    Error fetching stock data. Please ensure you&quot;re using a
                     valid symbol (e.g., RELIANCE.NS, TCS.NS)
                   </div>
                 }
@@ -1807,7 +1807,7 @@ const sendMessage = async (message: string) => {
                 role="assistant"
                 content={
                   <div className="text-red-500">
-                    Sorry, I couldn't fetch the recommendation data for {symbol}
+                    Sorry, I couldn&quot;t fetch the recommendation data for {symbol}
                     . Please check if the symbol is correct or try again later.
                   </div>
                 }

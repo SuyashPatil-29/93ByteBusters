@@ -130,8 +130,8 @@ export default function Home() {
 
                   <div className="border-l-4 border-blue-500 pl-4 py-3 bg-blue-50 dark:bg-zinc-700 rounded-r-lg">
                     <p className="text-sm text-zinc-700 dark:text-zinc-200">
-                      Try asking questions like "Why is my tech ETF down today?"
-                      or "What news is affecting Vanguard funds?"
+                      Try asking questions like &quot;Why is my tech ETF down today?&quot;
+                      or &quot;What news is affecting Vanguard funds?&quot;
                     </p>
                   </div>
                 </div>
