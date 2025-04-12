@@ -78,7 +78,7 @@ const sendMessage = async (message: string) => {
             <Message
               role="assistant"
               content={
-                <div className="w-full max-w-7xl mx-auto p-4">
+                <div className="w-full max-w-7xl mx-auto">
                   <h2 className="text-xl font-semibold mb-4">
                     Loading results for: {query}
                   </h2>
@@ -164,7 +164,7 @@ const sendMessage = async (message: string) => {
               <Message
                 role="assistant"
                 content={
-                  <div className="w-full max-w-7xl mx-auto p-4">
+                  <div className="w-full max-w-7xl mx-auto">
                     <h2 className="text-xl font-semibold mb-4">
                       Searching for: {query}
                     </h2>
@@ -254,7 +254,7 @@ const sendMessage = async (message: string) => {
               <Message
                 role="assistant"
                 content={
-                  <div className="w-full max-w-7xl mx-auto p-4">
+                  <div className="w-full max-w-7xl mx-auto">
                     <h2 className="text-xl font-semibold mb-4">
                       Results for: {query}
                     </h2>
@@ -439,7 +439,7 @@ const sendMessage = async (message: string) => {
                 <Message
                   role="assistant"
                   content={
-                    <div className="w-full max-w-7xl mx-auto p-4">
+                    <div className="w-full max-w-7xl mx-auto">
                       <h2 className="text-xl font-semibold mb-4">
                         Results for: {query}
                       </h2>
@@ -560,7 +560,7 @@ const sendMessage = async (message: string) => {
                 <Message
                   role="assistant"
                   content={
-                    <div className="w-full max-w-7xl mx-auto p-4">
+                    <div className="w-full max-w-7xl mx-auto">
                       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                         <p className="font-medium">
                           Would you like me to scrape detailed information from
@@ -601,7 +601,7 @@ const sendMessage = async (message: string) => {
             <Message
               role="assistant"
               content={
-                <div className="w-full max-w-7xl mx-auto p-4">
+                <div className="w-full max-w-7xl mx-auto">
                   <h2 className="text-xl font-semibold mb-4">
                     Fetching Market Overview
                   </h2>
@@ -697,7 +697,7 @@ const sendMessage = async (message: string) => {
               <Message
                 role="assistant"
                 content={
-                  <div className="w-full max-w-7xl mx-auto p-4">
+                  <div className="w-full max-w-7xl mx-auto">
                     <h2 className="text-xl font-semibold mb-4">
                       Searching for market data...
                     </h2>
@@ -792,7 +792,7 @@ const sendMessage = async (message: string) => {
               <Message
                 role="assistant"
                 content={
-                  <div className="w-full max-w-7xl mx-auto p-4">
+                  <div className="w-full max-w-7xl mx-auto">
                     <h2 className="text-xl font-semibold mb-4">
                       Market Overview
                     </h2>
@@ -958,7 +958,7 @@ const sendMessage = async (message: string) => {
               <Message
                 role="assistant"
                 content={
-                  <div className="w-full max-w-7xl mx-auto p-4">
+                  <div className="w-full max-w-7xl mx-auto">
                     <h2 className="text-xl font-semibold mb-6">
                       Market Overview
                     </h2>
@@ -1123,7 +1123,7 @@ const sendMessage = async (message: string) => {
               <Message
                 role="assistant"
                 content={
-                  <div className="w-full max-w-7xl mx-auto p-4">
+                  <div className="w-full max-w-7xl mx-auto">
                     <StockList data={data} />
                   </div>
                 }
@@ -1164,7 +1164,7 @@ const sendMessage = async (message: string) => {
               <Message
                 role="assistant"
                 content={
-                  <div className="w-full max-w-7xl mx-auto p-4">
+                  <div className="w-full max-w-7xl mx-auto">
                     <p>Scraping detailed information from: {url}</p>
                     <div className="animate-pulse space-y-3 mt-2">
                       <div className="h-4 bg-gray-200 rounded w-full"></div>
@@ -1358,7 +1358,7 @@ const sendMessage = async (message: string) => {
               <Message
                 role="assistant"
                 content={
-                  <div className="w-full max-w-7xl mx-auto p-4">
+                  <div className="w-full max-w-7xl mx-auto">
                     <p>Fetching NSE data for: {symbol}</p>
                     <div className="animate-pulse space-y-3 mt-2">
                       <div className="h-4 bg-gray-200 rounded w-full"></div>
@@ -1533,7 +1533,7 @@ const sendMessage = async (message: string) => {
             <Message
               role="assistant"
               content={
-                <div className="w-full max-w-7xl mx-auto p-4">
+                <div className="w-full max-w-7xl mx-auto">
                   <h2 className="text-xl font-semibold mb-4">Indian Markets</h2>
                   <div className="border rounded-lg p-4">
                     <div className="animate-pulse space-y-4">
@@ -1608,7 +1608,7 @@ const sendMessage = async (message: string) => {
               <Message
                 role="assistant"
                 content={
-                  <div className="w-full max-w-7xl mx-auto p-4">
+                  <div className="w-full max-w-7xl mx-auto">
                     <h2 className="text-xl font-semibold mb-4">
                       Indian Markets - {symbol}
                     </h2>
