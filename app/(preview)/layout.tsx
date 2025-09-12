@@ -3,10 +3,13 @@ import { Metadata } from "next";
 import { Toaster } from "sonner";
 import { AI } from "./actions";
 import Navbar from "@/components/Navbar";
+import { LanguageProvider } from "@/components/LanguageProvider";
+import { Analytics } from "@vercel/analytics/react";
 
 export const metadata: Metadata = {
-  title: "NewsSense",
-  description: "NewsSense is a real-time financial market analysis platform that connects fund performance with real-world events and news to explain market movements. It provides intelligent insights for ETFs, mutual funds, and market trends.",
+  title: "INGRES Groundwater Assistant",
+  description:
+    "AI assistant for India's INGRES groundwater assessments. Query regional results, analyze trends, compare regions, and search research.",
 };
 
 export default function RootLayout({
@@ -19,9 +22,12 @@ export default function RootLayout({
       <body>
         <Toaster position="top-center" richColors />
         <AI>
-          <Navbar />
-          {children}
+          <LanguageProvider>
+            <Navbar />
+            {children}
+          </LanguageProvider>
         </AI>
+        <Analytics />
       </body>
     </html>
   );

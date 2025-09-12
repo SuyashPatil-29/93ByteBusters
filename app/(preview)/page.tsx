@@ -21,34 +21,29 @@ export default function Home() {
 
   const suggestedActions = [
     {
-      title: "Explain",
-      label: "why Tesla is down today",
-      action: "Why is Tesla down today?",
-    },
-    {
       title: "Show",
-      label: "TCS stock data",
-      action: "Show me a chart of TCS stock data",
+      label: "Telangana groundwater status (2023)",
+      action: "Get groundwater status for Telangana at state level in 2023",
     },
     {
-      title: "Show me",
-      label: "AXIS BANK ETF performance",
-      action: "Show ETF performance for AXISVALUE",
+      title: "Analyze",
+      label: "Hyderabad trend 2015–2023",
+      action: "Generate groundwater trend analysis for Hyderabad district from 2015 to 2023",
     },
     {
-      title: "Recommend",
-      label: "if i should buy or sell a stock",
-      action: "Recommend me if i should buy or sell a stock",
+      title: "Compare",
+      label: "districts in Telangana (2023)",
+      action: "Compare Nalgonda, Rangareddy, and Medak at district level in 2023",
     },
     {
-      title: "Recommendations",
-      label: "of a similar stock",
-      action: "Get stock recommendations of similar stocks", // Default example with AAPL
+      title: "Search",
+      label: "over‑exploited blocks policy",
+      action: "Search groundwater research on policy for over-exploited blocks in India",
     },
     {
-      title: "Get",
-      label: "current market overview",
-      action: "Get current market overview",
+      title: "Find",
+      label: "block assessment (latest)",
+      action: "Get groundwater status for Shamirpet block at block level in 2023",
     },
   ];
 
@@ -101,7 +96,7 @@ export default function Home() {
             </div>
             <div>
               <p className="text-sm text-zinc-600 dark:text-zinc-300">
-                Understand why your investments are moving
+                Query India’s groundwater assessments, trends, and comparisons
               </p>
             </div>
           </div>
@@ -122,18 +117,17 @@ export default function Home() {
                 {/* Welcome Card */}
                 <div className="rounded-xl p-6 bg-white dark:bg-zinc-800 shadow-md border border-blue-100 dark:border-zinc-700 mb-6">
                   <p className="text-base font-medium text-blue-900 dark:text-blue-300 mb-3">
-                    Welcome to NewsSense
+                    Welcome to the INGRES Groundwater Assistant
                   </p>
                   <p className="text-zinc-600 dark:text-zinc-300 mb-3 text-sm">
-                    NewsSense connects fund performance with real-world events
-                    and news to explain market movements. Ask about any ETF,
-                    mutual fund, or market trend.
+                    Ask about groundwater status for any region and year, view historical trends,
+                    compare regions, and search research or policy documents.
                   </p>
 
                   <div className="border-l-4 border-blue-500 pl-4 py-3 bg-blue-50 dark:bg-zinc-700 rounded-r-lg">
                     <p className="text-sm text-zinc-700 dark:text-zinc-200">
-                      Try asking questions like &quot;Why is my tech ETF down today?&quot;
-                      or &quot;What news is affecting Vanguard funds?&quot;
+                      Try: "Get groundwater status for Telangana (2023)", "Trend for Hyderabad 2015–2023",
+                      or "Compare Nalgonda, Rangareddy, Medak (2023)".
                     </p>
                   </div>
                 </div>
@@ -170,12 +164,11 @@ export default function Home() {
                         />
                       </svg>
                       <div className="text-lg font-semibold text-blue-900 dark:text-blue-300">
-                        Fund Analysis
+                        Assessments
                       </div>
                     </div>
                     <div className="text-sm text-zinc-600 dark:text-zinc-300">
-                      Track ETFs and mutual funds with real-time performance
-                      data and news correlation
+                      Fetch official INGRES results including recharge, extraction, and category.
                     </div>
                   </div>
                   <div className="p-5 rounded-xl border border-blue-100 dark:border-zinc-700 bg-white dark:bg-zinc-800 shadow-sm">
@@ -215,12 +208,11 @@ export default function Home() {
                         />
                       </svg>
                       <div className="text-lg font-semibold text-blue-900 dark:text-blue-300">
-                        News Impact
+                        Trends
                       </div>
                     </div>
                     <div className="text-sm text-zinc-600 dark:text-zinc-300">
-                      Understand how breaking news and events affect your
-                      investments
+                      Explore time-series of stage of extraction and simple projections.
                     </div>
                   </div>
                   <div className="p-5 rounded-xl border border-blue-100 dark:border-zinc-700 bg-white dark:bg-zinc-800 shadow-sm">
@@ -239,12 +231,11 @@ export default function Home() {
                         />
                       </svg>
                       <div className="text-lg font-semibold text-blue-900 dark:text-blue-300">
-                        Market Insights
+                        Comparisons
                       </div>
                     </div>
                     <div className="text-sm text-zinc-600 dark:text-zinc-300">
-                      Get AI-powered explanations for market movements and
-                      trends
+                      Compare multiple regions side-by-side with category and stage.
                     </div>
                   </div>
                   <div className="p-5 rounded-xl border border-blue-100 dark:border-zinc-700 bg-white dark:bg-zinc-800 shadow-sm">
@@ -263,12 +254,11 @@ export default function Home() {
                         />
                       </svg>
                       <div className="text-lg font-semibold text-blue-900 dark:text-blue-300">
-                        Smart Summaries
+                        Research
                       </div>
                     </div>
                     <div className="text-sm text-zinc-600 dark:text-zinc-300">
-                      Receive concise summaries of complex financial events and
-                      correlations
+                      Find relevant groundwater research and policy documents.
                     </div>
                   </div>
                 </div>
@@ -291,8 +281,7 @@ export default function Home() {
                     </svg>
                   </div>
                   <p className="text-sm text-zinc-700 dark:text-zinc-200 font-medium">
-                    Try asking about fund performance or market trends using the
-                    suggestions below
+                    Use the suggestions below to explore groundwater data and insights
                   </p>
                 </div>
               </motion.div>

@@ -17,6 +17,17 @@ import FirecrawlApp from "@mendable/firecrawl-js";
 import axios from "axios";
 import StockList from "@/components/stock-list";
 import dynamic from "next/dynamic";
+import { ingresClient } from "@/services/ingres-api";
+import { searchGroundwaterResearch } from "@/services/serp-groundwater";
+import type { RegionIdentifier } from "@/lib/groundwater/types";
+import TrendAnalysisChart from "@/components/groundwater/TrendAnalysisChart";
+import { computeLinearProjection } from "@/lib/groundwater/trend";
+import GroundwaterStatusMap from "@/components/groundwater/GroundwaterStatusMap";
+import CategoryDistributionChart from "@/components/groundwater/CategoryDistributionChart";
+import FeedbackBar from "@/components/FeedbackBar";
+import TrackEvent from "@/components/TrackEvent";
+import { extractImages, extractIngresGIS } from "@/services/firecrawl";
+// Removed KV-based audit, rate-limit, and metrics
 
 const RecommendationTrend = dynamic(
   () => import("@/components/GetRecommendationTrend"),
@@ -42,19 +53,43 @@ const sendMessage = async (message: string) => {
   const contentStream = createStreamableValue("");
   const textComponent = <TextStreamMessage content={contentStream.value} />;
 
+  // Helper: extract explicit URL from the user's last message (if any)
+  const getExplicitUrlFromLastUser = (preferredHost?: string): string | null => {
+    try {
+      const history = (messages.get() as CoreMessage[]) || [];
+      for (let i = history.length - 1; i >= 0; i--) {
+        const m = history[i];
+        if (m.role !== "user") continue;
+        const text = typeof m.content === "string" ? m.content : "";
+        const urls = Array.from(text.matchAll(/https?:\/\/\S+/g)).map((x) => x[0].replace(/[)\]\.,]+$/, ""));
+        if (urls.length === 0) return null;
+        if (preferredHost) {
+          const pick = urls.find((u) => u.includes(preferredHost));
+          if (pick) return pick;
+        }
+        return urls[0];
+      }
+    } catch {}
+    return null;
+  };
+
   const { value: stream } = await streamUI({
     model: openai("gpt-4o"),
     // In the sendMessage function, modify the system prompt:
     system: `\
-    - you are a financial advisor assistant
-    - help explain market movements and fund performance
-    - use available tools to fetch and display stock data
-    - support different timeframes: recent (default), full (30 days), or historical (specific month)
-    - when users ask about stock recommendations or whether to buy/sell, use getStockRecommendation tool
-    - provide context and explanation for the recommendation trends
-    - reply in clear, concise language
-    - when user says a number after news results, call scrapeStockInfo with the corresponding article URL
-    - present numbered options for users to choose which article to analyze in detail
+    You are an expert groundwater assistant for India's INGRES system.\n
+    Goals:\n
+    - Help users retrieve groundwater assessment results for any region and year.\n
+    - Explain metrics: annual recharge, extractable resources, total extraction, and stage of extraction.\n
+    - Categorize units as Safe, Semi-Critical, Critical, or Over-Exploited.\n
+    - Use available tools to fetch INGRES data, analyze trends, compare regions, and search relevant research.\n
+    - Provide concise, multilingual-ready replies.\n
+    - When data is unavailable, state limitations and suggest alternatives.\n
+    Tools:\n
+    - getGroundwaterStatus(region, level, year) to fetch the official assessment.\n
+    - generateTrendAnalysis(region, level, startYear, endYear) for historical trends and projections.\n
+    - searchGroundwaterResearch(query) to find research and policy documents.\n
+    - compareRegions(regions, level, year) to compare groundwater status across regions.\n
   `,
     messages: messages.get() as CoreMessage[],
     text: async function* ({ content, done }) {
@@ -71,8 +106,436 @@ const sendMessage = async (message: string) => {
 
       return textComponent;
     },
-    // Add this to the tools object in streamUI
+    // Add groundwater-specific tools
     tools: {
+      getGroundwaterStatus: {
+        description: "Fetch official INGRES groundwater assessment for a region and year",
+        parameters: z.object({
+          region: z.string().describe("Region name or code (e.g., Telangana, Hyderabad)"),
+          level: z.enum(["national", "state", "district", "block"]).describe("Administrative level"),
+          year: z.number().int().describe("Assessment year (e.g., 2023)"),
+        }),
+        generate: async function* ({ region, level, year }) {
+          const toolCallId = generateId();
+          
+          // Loading state
+          yield (
+            <Message
+              role="assistant"
+              content={
+                <div className="w-full max-w-7xl mx-auto">
+                  <h2 className="text-xl font-semibold mb-4">Fetching groundwater status</h2>
+                  <div className="animate-pulse space-y-3">
+                    <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                    <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                  </div>
+                </div>
+              }
+            />
+          );
+
+          const t0 = Date.now();
+          try {
+            const regionId: RegionIdentifier = { level, name: region };
+            const assessment = await ingresClient.getAssessment({ region: regionId, year });
+
+            messages.done([
+              ...(messages.get() as CoreMessage[]),
+              { role: "assistant", content: [ { type: "tool-call", toolCallId, toolName: "getGroundwaterStatus", args: { region, level, year } } ] },
+              { role: "tool", content: [ { type: "tool-result", toolName: "getGroundwaterStatus", toolCallId, result: assessment } ] },
+            ]);
+
+            // 1) Prefer explicit URL from user's last message
+            let ingresUrl: string | null = getExplicitUrlFromLastUser("ingres.iith.ac.in");
+            let ingresImg: string | null = null;
+            try {
+              if (!ingresUrl) {
+                const search = await searchGroundwaterResearch(`${assessment.region.name} ${assessment.level} ${assessment.assessmentYear} site:ingres.iith.ac.in gecdataonline gis`, { num: 3, siteFilters: ["ingres.iith.ac.in"] });
+                const candidate = [...(search.organicResults || []), ...(search.topStories || [])]
+                  .map((r: any) => r.link)
+                  .find((l: string) => typeof l === "string" && l.includes("/gecdataonline/gis"));
+                if (candidate) ingresUrl = candidate;
+              }
+              if (ingresUrl) {
+                const imgs = await extractImages(ingresUrl);
+                ingresImg = imgs[0] || null;
+              }
+            } catch {}
+
+            const ui = (
+              <Message
+                role="assistant"
+                content={
+                  <div className="w-full max-w-4xl mx-auto">
+                    <div className="border rounded-lg p-4">
+                      <TrackEvent name="gw_tool" props={{ tool: "getGroundwaterStatus", level, year, region }} />
+                      <h3 className="text-lg font-medium mb-2">{assessment.region.name} ({assessment.level}) — {assessment.assessmentYear}</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <div className="text-zinc-500">Annual Recharge</div>
+                          <div className="font-semibold">{assessment.metrics.annualRechargeBcm} BCM</div>
+                        </div>
+                        <div>
+                          <div className="text-zinc-500">Extractable Resources</div>
+                          <div className="font-semibold">{assessment.metrics.extractableResourcesBcm} BCM</div>
+                        </div>
+                        <div>
+                          <div className="text-zinc-500">Total Extraction</div>
+                          <div className="font-semibold">{assessment.metrics.totalExtractionBcm} BCM</div>
+                        </div>
+                        <div>
+                          <div className="text-zinc-500">Stage of Extraction</div>
+                          <div className="font-semibold">{assessment.metrics.stageOfExtractionPercent}%</div>
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <span className="px-2 py-1 rounded text-xs border">Category: {assessment.metrics.category}</span>
+                      </div>
+                      {ingresImg ? (
+                        <div className="mt-4">
+                          <div className="text-sm font-medium mb-2">INGRES map snapshot</div>
+                          <a href={ingresUrl || ingresImg} target="_blank" rel="noreferrer">
+                            <img src={ingresImg} alt="INGRES map" className="rounded border max-h-72" />
+                          </a>
+                          {ingresUrl && (
+                            <div className="text-xs text-blue-600 mt-1">
+                              <a href={ingresUrl} target="_blank" rel="noreferrer">Source</a>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        ingresUrl && (
+                          <div className="mt-4">
+                            <div className="text-sm font-medium mb-2">INGRES map (embedded)</div>
+                            <iframe src={ingresUrl} className="w-full h-72 rounded border" loading="lazy"></iframe>
+                          </div>
+                        )
+                      )}
+                      <FeedbackBar tool="getGroundwaterStatus" context={`${assessment.region.name} ${assessment.assessmentYear}`} />
+                    </div>
+                  </div>
+                }
+              />
+            );
+            
+            return ui;
+          } catch (error: any) {
+            return (
+              <Message role="assistant" content={`Failed to fetch assessment for ${region} (${level}) ${year}: ${error.message || String(error)}`} />
+            );
+          }
+        },
+      },
+      generateTrendAnalysis: {
+        description: "Analyze historical groundwater trends and simple projections",
+        parameters: z.object({
+          region: z.string(),
+          level: z.enum(["national", "state", "district", "block"]),
+          startYear: z.number().int().optional(),
+          endYear: z.number().int().optional(),
+        }),
+        generate: async function* ({ region, level, startYear, endYear }) {
+          const toolCallId = generateId();
+          // Progressive skeleton
+          yield (
+            <Message
+              role="assistant"
+              content={
+                <div className="w-full max-w-4xl mx-auto">
+                  <div className="border rounded-lg p-4">
+                    <h3 className="text-lg font-medium mb-4">Trend — {region} ({level})</h3>
+                    <div className="animate-pulse h-64 bg-gray-100 rounded" />
+                  </div>
+                </div>
+              }
+            />
+          );
+          const t0 = Date.now();
+          try {
+            const regionId: RegionIdentifier = { level, name: region };
+            const trend = await ingresClient.getTrend({ region: regionId, startYear, endYear });
+            if (!trend.projections || trend.projections.length === 0) {
+              const projections = computeLinearProjection(trend.history, 5);
+              (trend as any).projections = projections;
+            }
+
+            messages.done([
+              ...(messages.get() as CoreMessage[]),
+              { role: "assistant", content: [ { type: "tool-call", toolCallId, toolName: "generateTrendAnalysis", args: { region, level, startYear, endYear } } ] },
+              { role: "tool", content: [ { type: "tool-result", toolName: "generateTrendAnalysis", toolCallId, result: trend } ] },
+            ]);
+
+            // Try to find INGRES page/image for this region
+            let ingresUrl2: string | null = getExplicitUrlFromLastUser("ingres.iith.ac.in");
+            let ingresImg2: string | null = null;
+            try {
+              if (!ingresUrl2) {
+                const search2 = await searchGroundwaterResearch(`${region} ${level} site:ingres.iith.ac.in gecdataonline gis`, { num: 3, siteFilters: ["ingres.iith.ac.in"] });
+                const candidate2 = [...(search2.organicResults || []), ...(search2.topStories || [])]
+                  .map((r: any) => r.link)
+                  .find((l: string) => typeof l === "string" && l.includes("/gecdataonline/gis"));
+                if (candidate2) ingresUrl2 = candidate2;
+              }
+              if (ingresUrl2) {
+                const imgs2 = await extractImages(ingresUrl2);
+                ingresImg2 = imgs2[0] || null;
+              }
+            } catch {}
+
+            const ui = (
+              <Message
+                role="assistant"
+                content={
+                  <div className="w-full max-w-4xl mx-auto">
+                    <div className="border rounded-lg p-4">
+                      <TrackEvent name="gw_tool" props={{ tool: "generateTrendAnalysis", level, region, startYear, endYear }} />
+                      <h3 className="text-lg font-medium mb-4">Trend — {region} ({level})</h3>
+                      <TrendAnalysisChart trend={trend as any} />
+                      {ingresImg2 ? (
+                        <div className="mt-4">
+                          <div className="text-sm font-medium mb-2">INGRES map snapshot</div>
+                          <a href={ingresUrl2 || ingresImg2} target="_blank" rel="noreferrer">
+                            <img src={ingresImg2} alt="INGRES map" className="rounded border max-h-72" />
+                          </a>
+                          {ingresUrl2 && (
+                            <div className="text-xs text-blue-600 mt-1">
+                              <a href={ingresUrl2} target="_blank" rel="noreferrer">Source</a>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        ingresUrl2 && (
+                          <div className="mt-4">
+                            <div className="text-sm font-medium mb-2">INGRES map (embedded)</div>
+                            <iframe src={ingresUrl2} className="w-full h-72 rounded border" loading="lazy"></iframe>
+                          </div>
+                        )
+                      )}
+                      <FeedbackBar tool="generateTrendAnalysis" context={`${region} ${level}`} />
+                    </div>
+                  </div>
+                }
+              />
+            );
+            
+            return ui;
+          } catch (error: any) {
+            return <Message role="assistant" content={`Failed to generate trend: ${error.message || String(error)}`} />;
+          }
+        },
+      },
+      searchGroundwaterResearch: {
+        description: "Search groundwater research and policy documents (SERP)",
+        parameters: z.object({ query: z.string() }),
+        generate: async function* ({ query }) {
+          const toolCallId = generateId();
+          yield (<Message role="assistant" content={`Searching research for: ${query}`} />);
+          const t0 = Date.now();
+          try {
+            const results = await searchGroundwaterResearch(query, { num: 8 });
+
+            // Summarize results with OpenAI
+            const openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+              body: JSON.stringify({
+                model: "gpt-4o-mini",
+                temperature: 0.2,
+                messages: [
+                  { role: "system", content: "You summarize groundwater research for policymakers in India. Be concise." },
+                  { role: "user", content: `Summarize key findings from these search results: ${JSON.stringify(results)}` },
+                ],
+              }),
+            });
+            const openaiData = await openaiResponse.json();
+            const summary = openaiData.choices?.[0]?.message?.content || "";
+            messages.done([
+              ...(messages.get() as CoreMessage[]),
+              { role: "assistant", content: [ { type: "tool-call", toolCallId, toolName: "searchGroundwaterResearch", args: { query } } ] },
+              { role: "tool", content: [ { type: "tool-result", toolName: "searchGroundwaterResearch", toolCallId, result: { results, summary } } ] },
+            ]);
+
+            // Use first SERP result to fetch a snapshot image
+            let serplink: string | null = getExplicitUrlFromLastUser() || null;
+            let serpimg: string | null = null;
+            try {
+              if (!serplink) serplink = (results.organicResults?.[0]?.link || results.topStories?.[0]?.link) ?? null;
+              if (serplink) {
+                const imgs = await extractImages(serplink);
+                serpimg = imgs[0] || null;
+              }
+            } catch {}
+
+            const ui = (
+              <Message
+                role="assistant"
+                content={
+                  <div className="w-full max-w-5xl mx-auto">
+                    <TrackEvent name="gw_tool" props={{ tool: "searchGroundwaterResearch", query }} />
+                    <h3 className="text-lg font-medium mb-3">Relevant Results</h3>
+                    {summary && (
+                      <div className="prose prose-sm max-w-none bg-blue-50 border border-blue-100 p-3 rounded mb-3" dangerouslySetInnerHTML={{ __html: marked.parse(summary) }} />
+                    )}
+                    <div className="space-y-3">
+                      {results.topStories.map((s, i) => (
+                        <div key={`t-${i}`} className="border rounded p-3">
+                          <div className="font-medium text-sm">{s.title}</div>
+                          <a className="text-xs text-blue-600" target="_blank" rel="noreferrer" href={s.link}>Open</a>
+                        </div>
+                      ))}
+                      {results.organicResults.map((r, i) => (
+                        <div key={`o-${i}`} className="border rounded p-3">
+                          <div className="font-medium text-sm">{r.title}</div>
+                          <div className="text-xs text-zinc-500">{r.displayedLink}</div>
+                          <p className="text-xs mt-1">{r.snippet}</p>
+                          <a className="text-xs text-blue-600" target="_blank" rel="noreferrer" href={r.link}>Open</a>
+                        </div>
+                      ))}
+                    </div>
+                    {serpimg ? (
+                      <div className="mt-4">
+                        <div className="text-sm font-medium mb-2">Snapshot</div>
+                        <a href={serplink || serpimg} target="_blank" rel="noreferrer">
+                          <img src={serpimg} alt="Snapshot" className="rounded border max-h-72" />
+                        </a>
+                      </div>
+                    ) : (
+                      serplink && (
+                        <div className="mt-4">
+                          <div className="text-sm font-medium mb-2">Page (embedded)</div>
+                          <iframe src={serplink} className="w-full h-72 rounded border" loading="lazy"></iframe>
+                        </div>
+                      )
+                    )}
+                    <FeedbackBar tool="searchGroundwaterResearch" context={query} />
+                  </div>
+                }
+              />
+            );
+            
+            return ui;
+          } catch (error: any) {
+            return <Message role="assistant" content={`Search failed: ${error.message || String(error)}`} />;
+          }
+        },
+      },
+      compareRegions: {
+        description: "Compare groundwater status across multiple regions",
+        parameters: z.object({
+          regions: z.array(z.string()).describe("Region names"),
+          level: z.enum(["state", "district", "block", "national"]).describe("Administrative level"),
+          year: z.number().int(),
+        }),
+        generate: async function* ({ regions, level, year }) {
+          const toolCallId = generateId();
+          
+          // Progressive skeletons for map, chart and cards
+          yield (
+            <Message
+              role="assistant"
+              content={
+                <div className="w-full max-w-5xl mx-auto space-y-4">
+                  <h3 className="text-lg font-medium">Comparison — {year} ({level})</h3>
+                  <div className="border rounded p-4">
+                    <div className="animate-pulse h-[420px] bg-gray-100 rounded" />
+                  </div>
+                  <div className="border rounded p-4">
+                    <div className="animate-pulse h-64 bg-gray-100 rounded" />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="border rounded p-3">
+                        <div className="animate-pulse h-5 bg-gray-100 w-2/3 mb-2 rounded" />
+                        <div className="animate-pulse h-4 bg-gray-100 w-1/2 mb-1 rounded" />
+                        <div className="animate-pulse h-4 bg-gray-100 w-1/3 rounded" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              }
+            />
+          );
+          const t0 = Date.now();
+          try {
+            const regionIds: RegionIdentifier[] = regions.map((name) => ({ level, name }));
+            const comparison = await ingresClient.compareRegions({ regions: regionIds, year });
+
+            messages.done([
+              ...(messages.get() as CoreMessage[]),
+              { role: "assistant", content: [ { type: "tool-call", toolCallId, toolName: "compareRegions", args: { regions, level, year } } ] },
+              { role: "tool", content: [ { type: "tool-result", toolName: "compareRegions", toolCallId, result: comparison } ] },
+            ]);
+
+            // Try fetch a state-level snapshot image
+            let ingresUrl3: string | null = null;
+            let ingresImg3: string | null = null;
+            try {
+              if (level === "state") {
+                const search3 = await searchGroundwaterResearch(`${regions[0]} state ${year} site:ingres.iith.ac.in gecdataonline gis`, { num: 3, siteFilters: ["ingres.iith.ac.in"] });
+                const candidate3 = [...(search3.organicResults || []), ...(search3.topStories || [])]
+                  .map((r: any) => r.link)
+                  .find((l: string) => typeof l === "string" && l.includes("/gecdataonline/gis"));
+                if (candidate3) {
+                  ingresUrl3 = candidate3;
+                  const imgs3 = await extractImages(candidate3);
+                  ingresImg3 = imgs3[0] || null;
+                }
+              }
+            } catch {}
+
+            const ui = (
+              <Message
+                role="assistant"
+                content={
+                  <div className="w-full max-w-5xl mx-auto space-y-4">
+                    <TrackEvent name="gw_tool" props={{ tool: "compareRegions", level, year, regions }} />
+                    <h3 className="text-lg font-medium">Comparison — {year} ({level})</h3>
+                    {level === "state" && (
+                      <GroundwaterStatusMap comparison={comparison as any} />
+                    )}
+                    <CategoryDistributionChart comparison={comparison as any} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {comparison.metrics.map((m, i) => (
+                        <div key={i} className="border rounded p-3 text-sm">
+                          <div className="font-medium">{m.region.name}</div>
+                          <div className="flex justify-between"><span>Stage</span><span>{m.stageOfExtractionPercent}%</span></div>
+                          <div className="flex justify-between"><span>Category</span><span>{m.category}</span></div>
+                        </div>
+                      ))}
+                    </div>
+                    {ingresImg3 ? (
+                      <div>
+                        <div className="text-sm font-medium mb-2">INGRES map snapshot</div>
+                        <a href={ingresUrl3 || ingresImg3} target="_blank" rel="noreferrer">
+                          <img src={ingresImg3} alt="INGRES map" className="rounded border max-h-72" />
+                        </a>
+                        {ingresUrl3 && (
+                          <div className="text-xs text-blue-600 mt-1">
+                            <a href={ingresUrl3} target="_blank" rel="noreferrer">Source</a>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      ingresUrl3 && (
+                        <div>
+                          <div className="text-sm font-medium mb-2">INGRES map (embedded)</div>
+                          <iframe src={ingresUrl3} className="w-full h-72 rounded border" loading="lazy"></iframe>
+                        </div>
+                      )
+                    )}
+                    <FeedbackBar tool="compareRegions" context={`${regions.join(",")} ${level} ${year}`} />
+                  </div>
+                }
+              />
+            );
+            
+            return ui;
+          } catch (error: any) {
+            return <Message role="assistant" content={`Comparison failed: ${error.message || String(error)}`} />;
+          }
+        },
+      },
       getStockNews: {
         description:
           "get latest news and information about stocks and market movements",
@@ -1850,6 +2313,133 @@ const sendMessage = async (message: string) => {
                 }
               />
             );
+          }
+        },
+      },
+      scrapeIngresGIS: {
+        description: "Scrape an INGRES GIS page with Firecrawl and return structured data",
+        parameters: z.object({
+          url: z.string().url().optional(),
+          locname: z.string().optional(),
+          loctype: z.enum(["NATIONAL", "STATE", "DISTRICT", "BLOCK"]).optional(),
+          year: z.union([z.string(), z.number()]).optional(),
+          component: z.string().optional(),
+          period: z.string().optional(),
+          category: z.string().optional(),
+          computationType: z.string().optional(),
+          stateuuid: z.string().optional(),
+          locuuid: z.string().optional(),
+          view: z.string().optional(),
+        }),
+        generate: async function* (args) {
+          const toolCallId = generateId();
+          const {
+            url,
+            locname,
+            loctype,
+            year,
+            component,
+            period,
+            category,
+            computationType,
+            stateuuid,
+            locuuid,
+            view,
+          } = args as any;
+
+          // Show loading
+          yield (
+            <Message
+              role="assistant"
+              content={
+                <div className="w-full max-w-3xl mx-auto">
+                  <div className="animate-pulse h-16 bg-gray-100 rounded" />
+                </div>
+              }
+            />
+          );
+
+          // Build URL if not provided
+          let targetUrl = url || null;
+          if (!targetUrl) {
+            const base = new URL("https://ingres.iith.ac.in/gecdataonline/gis/INDIA");
+            const parts: string[] = [];
+            const push = (k: string, v: any) => {
+              if (v === undefined || v === null || v === "") return;
+              parts.push(`${k}=${encodeURIComponent(String(v))}`);
+            };
+            push("locname", locname);
+            push("loctype", loctype);
+            push("view", view || "ADMIN");
+            push("locuuid", locuuid);
+            push("year", year);
+            push("computationType", computationType || "normal");
+            push("component", component);
+            push("period", period || "annual");
+            push("category", category);
+            push("mapOnClickParams", true);
+            push("stateuuid", stateuuid);
+            targetUrl = `${base.toString()};${parts.join(";")}`;
+          }
+
+          try {
+            const result = await extractIngresGIS(targetUrl!);
+            messages.done([
+              ...(messages.get() as CoreMessage[]),
+              { role: "assistant", content: [ { type: "tool-call", toolCallId, toolName: "scrapeIngresGIS", args } ] },
+              { role: "tool", content: [ { type: "tool-result", toolName: "scrapeIngresGIS", toolCallId, result } ] },
+            ]);
+
+            if (!result.success || !result.data) {
+              return <Message role="assistant" content={`Failed to scrape: ${result.error || "unknown error"}`} />;
+            }
+
+            const d = result.data as any;
+            const metrics = d.metrics || {};
+            const keys = Object.keys(metrics).slice(0, 6);
+
+            return (
+              <Message
+                role="assistant"
+                content={
+                  <div className="w-full max-w-4xl mx-auto">
+                    <TrackEvent name="gw_tool" props={{ tool: "scrapeIngresGIS", url: targetUrl }} />
+                    <div className="border rounded-lg p-4">
+                      <h3 className="text-lg font-medium">INGRES GIS — Extracted Data</h3>
+                      <div className="text-xs text-zinc-500 mt-1 break-all">
+                        <a className="text-blue-600" href={targetUrl} target="_blank" rel="noreferrer">Open source</a>
+                      </div>
+                      {d.location?.name || d.location?.state ? (
+                        <div className="mt-3 text-sm">
+                          <div><span className="text-zinc-500">Location:</span> {d.location?.name || [d.location?.state, d.location?.district, d.location?.block].filter(Boolean).join(", ")}</div>
+                          <div><span className="text-zinc-500">Level:</span> {d.location?.level || loctype}</div>
+                        </div>
+                      ) : null}
+                      {d.parameters ? (
+                        <div className="mt-3 text-sm grid grid-cols-2 gap-2">
+                          {Object.entries(d.parameters).map(([k, v]) => (
+                            <div key={k}><span className="text-zinc-500 capitalize">{k}:</span> {String(v)}</div>
+                          ))}
+                        </div>
+                      ) : null}
+                      {keys.length > 0 && (
+                        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {keys.map((k) => (
+                            <div key={k} className="border rounded p-3">
+                              <div className="text-xs text-zinc-500">{k}</div>
+                              <div className="font-semibold">{String(metrics[k])}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {d.notes && <p className="mt-4 text-sm text-zinc-700">{d.notes}</p>}
+                    </div>
+                  </div>
+                }
+              />
+            );
+          } catch (e: any) {
+            return <Message role="assistant" content={`Error scraping page: ${e?.message || String(e)}`} />;
           }
         },
       },
