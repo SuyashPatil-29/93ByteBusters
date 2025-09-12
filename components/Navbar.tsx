@@ -42,7 +42,7 @@ const Navbar = () => {
               Status
             </button>
             <button
-              onClick={() => handleAction("Generate groundwater trend analysis for Hyderabad district from 2015 to 2023")}
+              onClick={() => handleAction("Generate groundwater trend analysis for Hyderabad district from 2022 to 2023")}
               className="text-sm text-zinc-600 hover:text-zinc-900 transition-colors"
             >
               Trends

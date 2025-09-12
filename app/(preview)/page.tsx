@@ -22,18 +22,18 @@ export default function Home() {
   const suggestedActions = [
     {
       title: "Show",
-      label: "Telangana groundwater status (2023)",
-      action: "Get groundwater status for Telangana at state level in 2023",
+      label: "Karnataka groundwater status (2023)",
+      action: "Get groundwater status for Karnataka at state level in 2023",
     },
     {
       title: "Analyze",
-      label: "Hyderabad trend 2015–2023",
-      action: "Generate groundwater trend analysis for Hyderabad district from 2015 to 2023",
+      label: "Bengaluru Urban trend 2022–2023",
+      action: "Generate groundwater trend analysis for Bengaluru Urban district from 2022 to 2023",
     },
     {
       title: "Compare",
-      label: "districts in Telangana (2023)",
-      action: "Compare Nalgonda, Rangareddy, and Medak at district level in 2023",
+      label: "districts in Karnataka (2023)",
+      action: "Compare Bengaluru Urban, Mysuru, and Belagavi at district level in 2023",
     },
     {
       title: "Search",
@@ -43,7 +43,7 @@ export default function Home() {
     {
       title: "Find",
       label: "block assessment (latest)",
-      action: "Get groundwater status for Shamirpet block at block level in 2023",
+      action: "Get groundwater status for Anekal block at block level in 2023",
     },
   ];
 
@@ -126,8 +126,8 @@ export default function Home() {
 
                   <div className="border-l-4 border-blue-500 pl-4 py-3 bg-blue-50 dark:bg-zinc-700 rounded-r-lg">
                     <p className="text-sm text-zinc-700 dark:text-zinc-200">
-                      Try: "Get groundwater status for Telangana (2023)", "Trend for Hyderabad 2015–2023",
-                      or "Compare Nalgonda, Rangareddy, Medak (2023)".
+                      Try: "Get groundwater status for Karnataka (2023)", "Trend for Bengaluru Urban 2022–2023",
+                      or "Compare Bengaluru Urban, Mysuru, Belagavi (2023)".
                     </p>
                   </div>
                 </div>
