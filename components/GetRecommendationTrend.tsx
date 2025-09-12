@@ -173,4 +173,6 @@ const RecommendationTrend: React.FC<RecommendationTrendProps> = ({ data }) => {
   );
 };
 
-export default RecommendationTrend;
+export default function RecommendationTrend() {
+  return null;
+}

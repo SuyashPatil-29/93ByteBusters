@@ -4,6 +4,17 @@ import remarkGfm from "remark-gfm";
 
 export const NonMemoizedMarkdown = ({ children }: { children: string }) => {
   const components = {
+    img: ({ node, src, alt, ...props }: any) => {
+      const url = (src as string) || '';
+      const label = alt && String(alt).trim().length > 0 ? String(alt) : 'Show image';
+      return (
+        <details className="my-2">
+          <summary className="cursor-pointer text-sm text-blue-600 hover:underline">{label}</summary>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={url} alt={alt || 'image'} className="mt-2 max-w-full rounded border" {...props} />
+        </details>
+      );
+    },
     code: ({ node, inline, className, children, ...props }: any) => {
       const match = /language-(\w+)/.exec(className || "");
       return !inline && match ? (

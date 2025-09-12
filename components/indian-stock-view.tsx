@@ -270,6 +270,8 @@
 //   )
 // }
 
+export default function StockDataDisplay() { return null; }
+
 // export default StockChart;
 
 

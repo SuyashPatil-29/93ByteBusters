@@ -1,0 +1,52 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum LocationType {
+  STATE
+  DISTRICT
+  BLOCK
+}
+
+model Location {
+  id        Int          @id @default(autoincrement())
+  name      String
+  type      LocationType
+  uuid      String       @unique
+  parentId  Int?
+  parent    Location?    @relation("LocationToParent", fields: [parentId], references: [id])
+  children  Location[]   @relation("LocationToParent")
+
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([name, type])
+}
+
+model ScrapeCache {
+  id          Int       @id @default(autoincrement())
+  url         String    @unique
+  contentHtml String?
+  contentMd   String?
+  lastFetched DateTime  @default(now())
+  ttlSeconds  Int       @default(21600) // 6 hours
+
+  @@index([lastFetched])
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  timestamp DateTime @default(now())
+  action    String
+  details   Json?
+  userHint  String?
+}

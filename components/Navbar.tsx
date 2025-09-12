@@ -8,6 +8,7 @@ import { ArrowRight } from "lucide-react";
 import { Button, buttonVariants } from "./ui/button";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { LanguageSelector } from "./LanguageSelector";
 
 const Navbar = () => {
   const { sendMessage } = useActions();
@@ -31,34 +32,22 @@ const Navbar = () => {
               "flex gap-0 z-40 font-semibold bg-transparent shadow-none hover:bg-transparent text-black text-lg"
             )}
           >
-            News<span className="text-blue-600 text-lg">Sense</span>
+            INGRES<span className="text-blue-600 text-lg">Water</span>
           </Button>
           <div className="h-full flex items-center space-x-6">
             <button
-              onClick={() => handleAction("Show tech ETF performance")}
+              onClick={() => handleAction("Show groundwater status in Karnataka")}
               className="text-sm text-zinc-600 hover:text-zinc-900 transition-colors"
             >
-              Tech ETFs
+              Quick Start
             </button>
-            <button
-              onClick={() => handleAction("List all available stocks")}
+            <LanguageSelector />
+            <Link
+              href="/monitor"
               className="text-sm text-zinc-600 hover:text-zinc-900 transition-colors"
             >
-              Stocks
-            </button>
-            <button
-              onClick={() => handleAction("Get current market overview")}
-              className="text-sm text-zinc-600 hover:text-zinc-900 transition-colors"
-            >
-              Overview
-            </button>
-            <button
-              onClick={() => handleAction("Show Indian market stocks")}
-              className="flex items-center gap-2 text-sm px-4 py-2 rounded-lg"
-            >
-              Indian Markets
-              <ArrowRight className="w-4 h-4" />
-            </button>
+              Metrics
+            </Link>
           </div>
         </div>
       </MaxWidthWrapper>

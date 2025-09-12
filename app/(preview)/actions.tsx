@@ -18,6 +18,9 @@ import axios from "axios";
 import StockList from "@/components/stock-list";
 import dynamic from "next/dynamic";
 
+import { getGroundwaterStatus as getStatus, NaturalQuerySchema, queryINGRES as queryIngres } from "@/services/ingres-api";
+import type { GroundwaterAssessment } from "@/lib/groundwater";
+
 const RecommendationTrend = dynamic(
   () => import("@/components/GetRecommendationTrend"),
   { ssr: false }
@@ -46,15 +49,13 @@ const sendMessage = async (message: string) => {
     model: openai("gpt-4o"),
     // In the sendMessage function, modify the system prompt:
     system: `\
-    - you are a financial advisor assistant
-    - help explain market movements and fund performance
-    - use available tools to fetch and display stock data
-    - support different timeframes: recent (default), full (30 days), or historical (specific month)
-    - when users ask about stock recommendations or whether to buy/sell, use getStockRecommendation tool
-    - provide context and explanation for the recommendation trends
-    - reply in clear, concise language
-    - when user says a number after news results, call scrapeStockInfo with the corresponding article URL
-    - present numbered options for users to choose which article to analyze in detail
+    You are an INGRES Groundwater assistant for India.
+    - Resolve locations to UUIDs and fetch INGRES groundwater assessments.
+    - Prefer precise, sourced answers with the source URL.
+    - Use getGroundwaterStatus for location questions (state/district/block).
+    - Use queryINGRES for advanced parameterized queries.
+    - Use searchGroundwaterResearch to find relevant research and CGWB docs.
+    - Be concise and domain-accurate.
   `,
     messages: messages.get() as CoreMessage[],
     text: async function* ({ content, done }) {

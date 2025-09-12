@@ -39,3 +39,5 @@ next-env.d.ts
 
 # bun
 bun.lockb
+
+/lib/generated/prisma

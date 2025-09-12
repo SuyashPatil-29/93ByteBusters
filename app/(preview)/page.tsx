@@ -3,6 +3,8 @@
 import { ReactNode, useRef, useState } from "react";
 import { useActions } from "ai/rsc";
 import { Message } from "@/components/message";
+import { GroundwaterStatusMap } from "@/components/GroundwaterStatusMap";
+import { CategoryDistributionChart } from "@/components/CategoryDistributionChart";
 import { useScrollToBottom } from "@/components/use-scroll-to-bottom";
 import { motion } from "framer-motion";
 
@@ -20,36 +22,10 @@ export default function Home() {
     useScrollToBottom<HTMLDivElement>();
 
   const suggestedActions = [
-    {
-      title: "Explain",
-      label: "why Tesla is down today",
-      action: "Why is Tesla down today?",
-    },
-    {
-      title: "Show",
-      label: "TCS stock data",
-      action: "Show me a chart of TCS stock data",
-    },
-    {
-      title: "Show me",
-      label: "AXIS BANK ETF performance",
-      action: "Show ETF performance for AXISVALUE",
-    },
-    {
-      title: "Recommend",
-      label: "if i should buy or sell a stock",
-      action: "Recommend me if i should buy or sell a stock",
-    },
-    {
-      title: "Recommendations",
-      label: "of a similar stock",
-      action: "Get stock recommendations of similar stocks", // Default example with AAPL
-    },
-    {
-      title: "Get",
-      label: "current market overview",
-      action: "Get current market overview",
-    },
+    { title: "Show", label: "groundwater status in Karnataka", action: "Show groundwater status in Karnataka" },
+    { title: "Compare", label: "Bengaluru vs. Mysuru", action: "Compare groundwater between Bengaluru (Urban) and Mysuru" },
+    { title: "Find", label: "CGWB report for 2023-24", action: "Find CGWB groundwater assessment 2023-24 for Maharashtra" },
+    { title: "Query", label: "recharge in Pune 2024-25", action: "Query INGRES: Pune district recharge 2024-2025" },
   ];
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -122,18 +98,15 @@ export default function Home() {
                 {/* Welcome Card */}
                 <div className="rounded-xl p-6 bg-white dark:bg-zinc-800 shadow-md border border-blue-100 dark:border-zinc-700 mb-6">
                   <p className="text-base font-medium text-blue-900 dark:text-blue-300 mb-3">
-                    Welcome to NewsSense
+                    INGRES Groundwater Assistant
                   </p>
                   <p className="text-zinc-600 dark:text-zinc-300 mb-3 text-sm">
-                    NewsSense connects fund performance with real-world events
-                    and news to explain market movements. Ask about any ETF,
-                    mutual fund, or market trend.
+                    Explore India's groundwater assessments with INGRES data, CGWB reports, and research. Ask about any state, district, or block.
                   </p>
 
                   <div className="border-l-4 border-blue-500 pl-4 py-3 bg-blue-50 dark:bg-zinc-700 rounded-r-lg">
                     <p className="text-sm text-zinc-700 dark:text-zinc-200">
-                      Try asking questions like &quot;Why is my tech ETF down today?&quot;
-                      or &quot;What news is affecting Vanguard funds?&quot;
+                      Try asking: "Groundwater status in Karnataka", "Bengaluru Urban 2024-25 recharge", or "Compare Mumbai vs Delhi".
                     </p>
                   </div>
                 </div>
@@ -170,12 +143,12 @@ export default function Home() {
                         />
                       </svg>
                       <div className="text-lg font-semibold text-blue-900 dark:text-blue-300">
-                        Fund Analysis
+                        Groundwater Insights
                       </div>
                     </div>
                     <div className="text-sm text-zinc-600 dark:text-zinc-300">
-                      Track ETFs and mutual funds with real-time performance
-                      data and news correlation
+                      Track groundwater status and trends with real-time data
+                      and news correlation
                     </div>
                   </div>
                   <div className="p-5 rounded-xl border border-blue-100 dark:border-zinc-700 bg-white dark:bg-zinc-800 shadow-sm">
@@ -239,12 +212,11 @@ export default function Home() {
                         />
                       </svg>
                       <div className="text-lg font-semibold text-blue-900 dark:text-blue-300">
-                        Market Insights
+                        Groundwater Insights
                       </div>
                     </div>
                     <div className="text-sm text-zinc-600 dark:text-zinc-300">
-                      Get AI-powered explanations for market movements and
-                      trends
+                      Get AI-powered explanations for groundwater status and trends
                     </div>
                   </div>
                   <div className="p-5 rounded-xl border border-blue-100 dark:border-zinc-700 bg-white dark:bg-zinc-800 shadow-sm">
@@ -273,6 +245,19 @@ export default function Home() {
                   </div>
                 </div>
 
+                {/* Example Visualizations */}
+                <div className="grid md:grid-cols-2 gap-4 mb-6">
+                  <GroundwaterStatusMap />
+                  <CategoryDistributionChart
+                    data={[
+                      { category: "Safe", value: 42 },
+                      { category: "Semi-Critical", value: 23 },
+                      { category: "Critical", value: 12 },
+                      { category: "Over-Exploited", value: 7 },
+                    ]}
+                  />
+                </div>
+
                 {/* Prompt Section */}
                 <div className="bg-blue-50 dark:bg-zinc-700 rounded-lg p-4 flex items-center mb-6">
                   <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center mr-3 flex-shrink-0">
@@ -291,7 +276,7 @@ export default function Home() {
                     </svg>
                   </div>
                   <p className="text-sm text-zinc-700 dark:text-zinc-200 font-medium">
-                    Try asking about fund performance or market trends using the
+                    Try asking about groundwater status or regional comparisons using the
                     suggestions below
                   </p>
                 </div>
@@ -371,7 +356,7 @@ export default function Home() {
                 <input
                   ref={inputRef}
                   className="bg-white rounded-xl px-5 py-4 w-full outline-none dark:bg-zinc-800 text-zinc-800 dark:text-zinc-300 pr-14 shadow-md focus:ring-2 focus:ring-blue-500 focus:border-transparent border border-blue-100 dark:border-zinc-700"
-                  placeholder="Ask about any fund or market trend..."
+                  placeholder="Ask about any groundwater region or trend..."
                   value={input}
                   onChange={(event) => {
                     setInput(event.target.value);
