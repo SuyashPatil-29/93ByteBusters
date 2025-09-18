@@ -14,12 +14,17 @@ export async function scrapeViaSdk(args: {
   url: string;
   formats?: Array<"html" | "markdown">;
   onlyMainContent?: boolean;
+  waitForMs?: number;
 }): Promise<{ html?: string; markdown?: string }> {
   console.log('scrapeViaSdk', args);
   const fc = getFirecrawl() as any;
   // New SDK (preferred)
   if (typeof fc.scrape === 'function') {
-    const res = await fc.scrape(args.url, { formats: args.formats ?? ["markdown", "html"], onlyMainContent: args.onlyMainContent ?? true });
+    const res = await fc.scrape(args.url, {
+      formats: args.formats ?? ["markdown", "html"],
+      onlyMainContent: args.onlyMainContent ?? false,
+      waitFor: typeof args.waitForMs === 'number' ? args.waitForMs : 20000,
+    });
     const data: any = res ?? {};
     console.log('scrapeViaSdk data', data);
     return {
@@ -29,7 +34,12 @@ export async function scrapeViaSdk(args: {
   }
   // Legacy SDK
   if (typeof fc.scrapeUrl === 'function') {
-    const res = await fc.scrapeUrl({ url: args.url, formats: args.formats ?? ["html", "markdown"], onlyMainContent: args.onlyMainContent ?? true });
+    const res = await fc.scrapeUrl({
+      url: args.url,
+      formats: args.formats ?? ["html", "markdown"],
+      onlyMainContent: args.onlyMainContent ?? false,
+      waitFor: typeof args.waitForMs === 'number' ? args.waitForMs : 20000,
+    });
     return { html: (res as any)?.html, markdown: (res as any)?.markdown };
   }
   throw new Error('FireCrawl SDK does not expose scrape() or scrapeUrl()');
@@ -56,9 +66,7 @@ export async function scrapeViaApi(args: {
   if (Array.isArray(args.includeTags) && args.includeTags.length > 0) {
     (body as any).includeTags = args.includeTags;
   }
-  if (typeof args.waitForMs === 'number') {
-    (body as any).waitFor = args.waitForMs;
-  }
+  (body as any).waitFor = typeof args.waitForMs === 'number' ? args.waitForMs : 20000;
   const res = await fetch(endpoint, {
     method: "POST",
     headers: {

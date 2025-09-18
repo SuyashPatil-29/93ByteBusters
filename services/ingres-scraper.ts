@@ -54,9 +54,13 @@ export async function scrapeWithCache(url: string, options?: {
         const res = await scrapeViaApi({
           url: targetUrl,
           formats: options?.formats ?? ["html", "markdown"],
-          onlyMainContent: true,
+          onlyMainContent: false,
           maxAgeMs: (options?.ttlSeconds ?? 21600) * 1000,
-          waitForMs: 10000,
+          waitForMs: 20000,
+          includeTags: [
+            "table","thead","tbody","tr","th","td",
+            "section","article","p","h1","h2","h3","h4","h5","h6","li","span","div"
+          ],
         });
         dbg("REST /v2/scrape done", { ms: Date.now() - t0, md: res.markdown?.length ?? 0, html: res.html?.length ?? 0 });
         return res;
@@ -66,7 +70,7 @@ export async function scrapeWithCache(url: string, options?: {
       try {
         dbg("SDK scrape()", targetUrl);
         const t0 = Date.now();
-        const res = await scrapeViaSdk({ url: targetUrl, formats: options?.formats ?? ["markdown", "html"], onlyMainContent: true });
+        const res = await scrapeViaSdk({ url: targetUrl, formats: options?.formats ?? ["markdown", "html"], onlyMainContent: false, waitForMs: 20000 });
         dbg("SDK scrape() done", { ms: Date.now() - t0, md: res.markdown?.length ?? 0, html: res.html?.length ?? 0 });
         return res;
       } catch (e: any) { dbg("SDK scrape() failed", e?.message ?? e); throw e; }
@@ -86,8 +90,8 @@ export async function scrapeWithCache(url: string, options?: {
       url: targetUrl,
       formats: options?.formats ?? ["html", "markdown"],
       includeTags: options?.includeTags,
-      waitFor: 6000,
-      onlyMainContent: true,
+      waitFor: 20000,
+      onlyMainContent: false,
     } as any);
     dbg("SDK scrapeUrl() done", { ms: Date.now() - t0, md: (res as any)?.markdown?.length ?? 0, html: (res as any)?.html?.length ?? 0 });
     return res;
