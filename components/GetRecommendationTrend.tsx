@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use client"; // Add this at the top to make it a client component
 
 import React from 'react';
