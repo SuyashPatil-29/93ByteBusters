@@ -1,6 +1,9 @@
 import { NextRequest } from "next/server";
 import { INGRESLocationService } from "@/services/ingres-location";
 
+// Set maximum execution time to 59 seconds
+export const maxDuration = 59;
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const name = searchParams.get("name");

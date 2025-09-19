@@ -1,6 +1,9 @@
 import { NextRequest } from "next/server";
 import { queryINGRES } from "@/services/ingres-api";
 
+// Set maximum execution time to 59 seconds
+export const maxDuration = 59;
+
 export async function POST(req: NextRequest) {
   const body = await req.json();
   try {
