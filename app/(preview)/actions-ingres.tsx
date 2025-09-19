@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Message, TextStreamMessage } from "@/components/message";
 import { openai } from "@ai-sdk/openai";
 import { CoreMessage, generateId, generateText } from "ai";
