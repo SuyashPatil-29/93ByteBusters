@@ -2,7 +2,7 @@
 import { PrismaPlugin } from '@prisma/nextjs-monorepo-workaround-plugin'
 
 export default {
-  webpack: (config: any, { isServer }: any) => {
+  webpack: (config, isServer) => {
     if (isServer) {
       config.plugins = [...config.plugins, new PrismaPlugin()];
     }
