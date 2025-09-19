@@ -250,7 +250,7 @@ const sendMessage = async (message: string) => {
               <Message role="assistant" content={<GroundwaterStatus data={assessment} />} />
             );
           } catch (e: any) {
-            return <Message role="assistant" content={<div className="text-sm">Sorry, I couldn't fetch data right now.</div>} />;
+            return <Message role="assistant" content={<div className="text-sm">Sorry, I couldn&apos;t fetch data right now.</div>} />;
           }
         },
       },

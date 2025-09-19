@@ -102,12 +102,12 @@ export default function Home() {
                     INGRES Groundwater Assistant
                   </p>
                   <p className="text-zinc-600 dark:text-zinc-300 mb-3 text-sm">
-                    Explore India's groundwater assessments with INGRES data, CGWB reports, and research. Ask about any state, district, or block.
+                    Explore India&apos;s groundwater assessments with INGRES data, CGWB reports, and research. Ask about any state, district, or block.
                   </p>
 
                   <div className="border-l-4 border-blue-500 pl-4 py-3 bg-blue-50 dark:bg-zinc-700 rounded-r-lg">
                     <p className="text-sm text-zinc-700 dark:text-zinc-200">
-                      Try asking: "Groundwater status in Karnataka", "Bengaluru Urban 2024-25 recharge", or "Compare Mumbai vs Delhi".
+                      Try asking: &quot;Groundwater status in Karnataka&quot;, &quot;Bengaluru Urban 2024-25 recharge&quot;, or &quot;Compare Mumbai vs Delhi&quot;.
                     </p>
                   </div>
                 </div>
